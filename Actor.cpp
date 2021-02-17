@@ -16,12 +16,20 @@ StudentWorld* Actor::getWorld() const {
     return m_studentWorld;
 }
 
+bool Actor::isCollisionAvoidance() {
+    return true;
+}
+
 bool Actor::isAlive() const {
     return m_alive;
 }
 
 void Actor::setDead() {
     m_alive = false;
+}
+
+bool Actor::canBeDamaged() const {
+    return true;
 }
 
 bool Actor::blocksMovement() const {
@@ -46,19 +54,58 @@ int Actor::gethorizSpeed() const {
 
 // Ghost Racer ===========================================================================
 
-GhostRacer::GhostRacer(int imageID, int startX, int startY, StudentWorld* sw):
-    Actor(imageID, startX, startY, 90, 4.0, 0, sw) {
+GhostRacer::GhostRacer(int startX, int startY, StudentWorld* sw):
+    Actor(0, startX, startY, 90, 4.0, 0, sw) {
+        m_health = 100;
         
 }
 
-void GhostRacer::computeDestination(int& destX, int& destY, int direction) {
-    double deltaX = cos(direction * 3.14159 / 180) * 4;
-    destX += deltaX;
+int GhostRacer::getHealth() const{
+    return m_health;
+}
+
+void GhostRacer::decreaseHealth(int amount) {
+    m_health -= amount;
+}
+
+void GhostRacer::spin() {
+    int adjustDegrees = randInt(5, 20);
+    int direction = randInt(0, 1);
+    // 0 counterclockwise, 1 clockwise
+    switch(direction) {
+        case 0: // counterclockwise, increase angle
+            if (getDirection() + adjustDegrees > 120)
+                setDirection(120);
+            else
+                setDirection(getDirection() + adjustDegrees);
+            break;
+        case 1:
+            if (getDirection() - adjustDegrees < 60)
+                setDirection(60);
+            else
+                setDirection(getDirection() - adjustDegrees);
+    }
 }
 
 void GhostRacer::doSomething() {
     if (!isAlive())
         return;
+    
+    if (getX() <= ROAD_CENTER - (ROAD_WIDTH / 2)) {
+        if (getDirection() > 90) {
+            decreaseHealth(10);
+            setDirection(82);
+            getWorld()->playSound(SOUND_VEHICLE_CRASH);
+        }
+    }
+    
+    if (getX() >= ROAD_CENTER + (ROAD_WIDTH / 2)) {
+        if (getDirection() < 90) {
+            decreaseHealth(10);
+            setDirection(98);
+            getWorld()->playSound(SOUND_VEHICLE_CRASH);
+        }
+    }
     
     int ch;
     if (getWorld()->getKey(ch)) {
@@ -96,15 +143,13 @@ void GhostRacer::doSomething() {
     moveTo(currX+deltaX, currY);
 }
 
-
-// BorderLine ===================================================================
-
-BorderLine::BorderLine(int imageID, int startX, int startY, StudentWorld *sw):
-    Actor(imageID, startX, startY, 0, 2.0, 1, sw) {
+// Obstacle ===================================================================
+Obstacle::Obstacle(int imageID, int startX, int startY, int size, StudentWorld* sw) :
+    Actor(imageID, startX, startY, 0, size, 2, sw) {
         setvertSpeed(-4);
 }
 
-void BorderLine::doSomething() {
+void Obstacle::move() {
     GhostRacer* player = getWorld()->getPlayer();
     int vertSpeed = getvertSpeed() - player->getvertSpeed();
     int horizSpeed = gethorizSpeed();
@@ -119,3 +164,33 @@ void BorderLine::doSomething() {
     }
 }
 
+
+// BorderLine ===================================================================
+
+BorderLine::BorderLine(int imageID, int startX, int startY, StudentWorld *sw):
+    Obstacle(imageID, startX, startY, 2, sw) {
+     
+}
+
+void BorderLine::doSomething() {
+    move();
+}
+
+// Oil Slick ===========================================================================
+
+OilSlick::OilSlick(int startX, int startY, int size, StudentWorld* sw) :
+    Obstacle(3, startX, startY, size, sw) {
+      
+}
+
+bool OilSlick::canBeDamaged() const {
+    return false;
+}
+
+void OilSlick::doSomething() {
+    move();
+    if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
+        getWorld()->playSound(SOUND_OIL_SLICK);
+        getWorld()->getPlayer()->spin();
+    }
+}

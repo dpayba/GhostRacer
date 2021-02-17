@@ -28,8 +28,7 @@ int StudentWorld::init()
 {
     m_levelFinished = false;
     
-    m_player = new GhostRacer(0, 128, 32, this);
-    
+    m_player = new GhostRacer(128, 32, this);
     
     double nObjects = VIEW_HEIGHT / SPRITE_HEIGHT;
     double mObjects = VIEW_HEIGHT / (4 * SPRITE_HEIGHT);
@@ -66,6 +65,13 @@ int StudentWorld::move()
         m_actors.push_back(new BorderLine(2, ROAD_CENTER + ((ROAD_WIDTH/2)-(ROAD_WIDTH/3)), newBorderY, this));
     }
     
+    double chanceZombiePed = max(100-getLevel()*10, 20);
+    if (randInt(0, chanceZombiePed-1) == 0) {
+        int xLocation = randInt(ROAD_CENTER - (ROAD_WIDTH / 2), ROAD_CENTER + (ROAD_WIDTH / 2));
+        int size = randInt(2, 5);
+        m_actors.push_front(new OilSlick(xLocation, VIEW_HEIGHT, size, this));
+    }
+    
     m_player->doSomething();
     list<Actor*>::iterator it;
     for (it = m_actors.begin(); it != m_actors.end(); it++) {
@@ -76,6 +82,7 @@ int StudentWorld::move()
             return GWSTATUS_PLAYER_DIED;
         }
     }
+    
     
     it = m_actors.begin();
     while(it != m_actors.end()) {
@@ -109,4 +116,27 @@ void StudentWorld::cleanUp()
 
 GhostRacer* StudentWorld::getPlayer() const {
     return m_player;
+}
+
+int StudentWorld::getPlayerX() const {
+    return m_player->getX();
+}
+
+int StudentWorld::getPlayerY() const {
+    return m_player->getY();
+}
+
+double StudentWorld::getPlayerRadius() const {
+    return m_player->getRadius();
+}
+
+bool StudentWorld::overlapsWithRacer(int x1, int y1, double radius) const {
+    double deltaX = abs(x1-getPlayerX());
+    double deltaY = abs(y1-getPlayerY());
+    double radiusSum = radius + getPlayerRadius();
+    
+    if (deltaX < radiusSum * 0.25 && deltaY < radiusSum * 0.6)
+        return true;
+    return false;
+    
 }

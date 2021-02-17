@@ -17,6 +17,10 @@ public:
     virtual int move();
     virtual void cleanUp();
     GhostRacer* getPlayer() const;
+    int getPlayerX() const;
+    int getPlayerY() const;
+    double getPlayerRadius() const;
+    bool overlapsWithRacer(int x1, int y1, double radius) const;
 private:
     GhostRacer* m_player;
     std::list<Actor*> m_actors;
