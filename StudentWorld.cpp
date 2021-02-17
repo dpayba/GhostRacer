@@ -78,6 +78,11 @@ int StudentWorld::move()
         m_actors.push_front(new HolyWaterGoodie(xLocation, VIEW_HEIGHT, this));
     }
     
+    double chanceOfLostSoul = 100;
+    if (randInt(0, chanceOfLostSoul-1) == 0) {
+        int xLocation = randInt(ROAD_CENTER - (ROAD_WIDTH / 2), ROAD_CENTER + (ROAD_WIDTH / 2));
+        m_actors.push_front(new SoulGoodie(xLocation, VIEW_HEIGHT, this));
+    }
     
     m_player->doSomething();
     list<Actor*>::iterator it;
