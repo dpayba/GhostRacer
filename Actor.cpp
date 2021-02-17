@@ -52,12 +52,26 @@ int Actor::gethorizSpeed() const {
     return m_horizSpeed;
 }
 
-// Ghost Racer ===========================================================================
+void Actor::moveDown() {
+    GhostRacer* player = getWorld()->getPlayer();
+    int vertSpeed = getvertSpeed() - player->getvertSpeed();
+    int horizSpeed = gethorizSpeed();
+    int destX = getX() + horizSpeed;
+    int destY = getY() + vertSpeed;
+    
+    moveTo(destX, destY);
+    
+    if (destX < 0 || destY < 0 || destX > VIEW_WIDTH || destY > VIEW_HEIGHT) {
+        setDead();
+        return;
+    }
+}
+
+// Ghost Racer ========================================================================
 
 GhostRacer::GhostRacer(int startX, int startY, StudentWorld* sw):
     Actor(0, startX, startY, 90, 4.0, 0, sw) {
         m_health = 100;
-        
 }
 
 int GhostRacer::getHealth() const{
@@ -66,6 +80,10 @@ int GhostRacer::getHealth() const{
 
 void GhostRacer::decreaseHealth(int amount) {
     m_health -= amount;
+}
+
+void GhostRacer::increaseHealth(int amount) {
+    m_health += amount;
 }
 
 void GhostRacer::spin() {
@@ -144,24 +162,10 @@ void GhostRacer::doSomething() {
 }
 
 // Obstacle ===================================================================
+
 Obstacle::Obstacle(int imageID, int startX, int startY, int size, StudentWorld* sw) :
     Actor(imageID, startX, startY, 0, size, 2, sw) {
         setvertSpeed(-4);
-}
-
-void Obstacle::move() {
-    GhostRacer* player = getWorld()->getPlayer();
-    int vertSpeed = getvertSpeed() - player->getvertSpeed();
-    int horizSpeed = gethorizSpeed();
-    int destX = getX() + horizSpeed;
-    int destY = getY() + vertSpeed;
-    
-    moveTo(destX, destY);
-    
-    if (destX < 0 || destY < 0 || destX > VIEW_WIDTH || destY > VIEW_HEIGHT) {
-        setDead();
-        return;
-    }
 }
 
 
@@ -173,24 +177,95 @@ BorderLine::BorderLine(int imageID, int startX, int startY, StudentWorld *sw):
 }
 
 void BorderLine::doSomething() {
-    move();
+    moveDown();
 }
 
 // Oil Slick ===========================================================================
 
 OilSlick::OilSlick(int startX, int startY, int size, StudentWorld* sw) :
-    Obstacle(3, startX, startY, size, sw) {
-      
-}
+    Obstacle(3, startX, startY, size, sw) {}
 
 bool OilSlick::canBeDamaged() const {
     return false;
 }
 
 void OilSlick::doSomething() {
-    move();
+    moveDown();
     if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
         getWorld()->playSound(SOUND_OIL_SLICK);
         getWorld()->getPlayer()->spin();
     }
+}
+
+// Goodie ============================================================
+
+Goodie::Goodie(int imageID, int startX, int startY, int size, StudentWorld* sw) :
+    Actor(imageID, startX, startY, 0, size, 2, sw) {
+        setvertSpeed(-4);
+}
+
+void Goodie::doSomething() {
+    moveDown();
+    if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
+        if (canHeal()) {
+            getWorld()->getPlayer()->decreaseHealth(10);
+            setDead();
+            getWorld()->playSound(SOUND_GOT_GOODIE);
+            // increase player score by 250
+        }
+        if (canRefill()) {
+            // incrase holy water by 10
+            setDead();
+            getWorld()->playSound(SOUND_GOT_GOODIE);
+            // increase player score by 50
+        }
+        if (canLevel()) {
+            // increase number of souls saved, may result in level end. studentworld must communicate to framework
+            setDead();
+            getWorld()->playSound(SOUND_GOT_SOUL);
+            // increase score by 100
+        }
+    }
+    if (canLevel())
+        setDirection(getDirection() - 10);
+    
+}
+
+bool Goodie::canHeal() {
+    return false;
+}
+
+bool Goodie::canRefill() {
+    return false;
+}
+
+bool Goodie::canLevel() {
+    return false;
+}
+
+// Healing Goodie ============================================================
+
+HealingGoodie::HealingGoodie(int startX, int startY, StudentWorld* sw) :
+    Goodie(8, startX, startY, 1, sw) {}
+
+bool HealingGoodie::canHeal() {
+    return true;
+}
+
+// Holy Water Goodie ============================================================
+ 
+HolyWaterGoodie::HolyWaterGoodie(int startX, int startY, StudentWorld* sw) :
+    Goodie(10, startX, startY, 2, sw) {}
+
+bool HolyWaterGoodie::canRefill() {
+    return true;
+}
+
+// Soul Goodie ============================================================
+
+SoulGoodie::SoulGoodie(int startX, int startY, StudentWorld* sw) :
+    Goodie(9, startX, startY, 4, sw) {}
+
+bool SoulGoodie::canLevel() {
+    return true;
 }

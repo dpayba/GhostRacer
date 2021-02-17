@@ -65,12 +65,19 @@ int StudentWorld::move()
         m_actors.push_back(new BorderLine(2, ROAD_CENTER + ((ROAD_WIDTH/2)-(ROAD_WIDTH/3)), newBorderY, this));
     }
     
-    double chanceZombiePed = max(100-getLevel()*10, 20);
-    if (randInt(0, chanceZombiePed-1) == 0) {
+    double chanceOilSlick = max(150-getLevel()*10, 40);
+    if (randInt(0, chanceOilSlick-1) == 0) {
         int xLocation = randInt(ROAD_CENTER - (ROAD_WIDTH / 2), ROAD_CENTER + (ROAD_WIDTH / 2));
         int size = randInt(2, 5);
         m_actors.push_front(new OilSlick(xLocation, VIEW_HEIGHT, size, this));
     }
+    
+    double chanceHolyWater = 100 + 10 * getLevel();
+    if (randInt(0, chanceHolyWater-1) == 0) {
+        int xLocation = randInt(ROAD_CENTER - (ROAD_WIDTH / 2), ROAD_CENTER + (ROAD_WIDTH / 2));
+        m_actors.push_front(new HolyWaterGoodie(xLocation, VIEW_HEIGHT, this));
+    }
+    
     
     m_player->doSomething();
     list<Actor*>::iterator it;

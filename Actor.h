@@ -24,6 +24,7 @@ public:
     void sethorizSpeed(int speed);
     int getvertSpeed() const;
     int gethorizSpeed() const;
+    void moveDown();
 private:
     StudentWorld* m_studentWorld;
     bool m_alive;
@@ -43,6 +44,7 @@ public:
     bool isOuterLine() const;
     int getHealth() const;
     void decreaseHealth(int amount);
+    void increaseHealth(int amount);
     void spin();
 private:
     int m_health;
@@ -53,7 +55,6 @@ class Obstacle : public Actor {
 public:
     Obstacle(int imageID, int startX, int startY, int size, StudentWorld* sw);
     virtual ~Obstacle() {};
-    void move();
 private:
 };
 
@@ -80,14 +81,39 @@ public:
 private:
 };
 
-/**
+
+
+
 class Goodie : public Actor {
 public:
-    Goodie(int imageID, int startX, int startY, StudentWorld* sw);
-    virtual bool isCollisionAvoidance();
+    Goodie(int imageID, int startX, int startY, int size, StudentWorld* sw);
+    // hard code depth 2, same horiz and vert speed, direction 0, size changes
+  //  virtual bool isCollisionAvoidance();
+    virtual bool canHeal();
+    virtual bool canRefill();
+    virtual bool canLevel();
     virtual void doSomething();
 private:
 };
- */
+ 
+class HealingGoodie : public Goodie {
+public:
+    HealingGoodie(int startX, int startY, StudentWorld* sw);
+    virtual bool canHeal();
+private:
+};
 
+class HolyWaterGoodie : public Goodie {
+public:
+    HolyWaterGoodie(int startX, int startY, StudentWorld* sw);
+    virtual bool canRefill();
+private:
+};
+
+class SoulGoodie : public Goodie {
+public:
+    SoulGoodie(int startX, int startY, StudentWorld* sw);
+    virtual bool canLevel();
+private:
+};
 #endif // ACTOR_H_
