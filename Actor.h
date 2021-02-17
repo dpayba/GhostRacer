@@ -116,4 +116,39 @@ public:
     virtual bool canLevel();
 private:
 };
+
+
+
+
+class Pedestrian : public Actor {
+public:
+    Pedestrian(int imageID, int startX, int startY, int size, StudentWorld *sw);
+    void setPlanDistance(int num);
+    int getPlanDistance() const;
+    void makeNewPlanDistance();
+private:
+    int m_planDistance;
+};
+
+class HumanPedestrian : public Pedestrian {
+public:
+    HumanPedestrian(int startX, int startY, StudentWorld *sw);
+    virtual void doSomething();
+private:
+};
+
+class ZombiePedestrian : public Pedestrian {
+public:
+    ZombiePedestrian(int startX, int startY, StudentWorld* sw);
+    virtual void doSomething();
+    void setTicksUntilGrunt(int ticks);
+    int getTicksUntilGrunt() const;
+private:
+    int m_ticksUntilGrunt;
+};
+
+
+
+
+
 #endif // ACTOR_H_

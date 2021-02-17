@@ -84,6 +84,18 @@ int StudentWorld::move()
         m_actors.push_front(new SoulGoodie(xLocation, VIEW_HEIGHT, this));
     }
     
+    double chanceHumanPed = max(200 - getLevel() * 10, 30);
+    if (randInt(0, chanceHumanPed-1) == 0) {
+        int xLocation = randInt(0, VIEW_WIDTH);
+        m_actors.push_front(new HumanPedestrian(xLocation, VIEW_HEIGHT, this));
+    }
+    
+    double chanceZombiePed = max(100 - getLevel() * 10, 30);
+    if (randInt(0, chanceZombiePed-1) == 0) {
+        int xLocation = randInt(0, VIEW_WIDTH);
+        m_actors.push_front(new ZombiePedestrian(xLocation, VIEW_HEIGHT, this));
+    }
+    
     m_player->doSomething();
     list<Actor*>::iterator it;
     for (it = m_actors.begin(); it != m_actors.end(); it++) {

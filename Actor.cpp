@@ -269,3 +269,111 @@ SoulGoodie::SoulGoodie(int startX, int startY, StudentWorld* sw) :
 bool SoulGoodie::canLevel() {
     return true;
 }
+
+
+// Pedestrian =====================================================================
+
+Pedestrian::Pedestrian(int imageID, int startX, int startY, int size, StudentWorld *sw) : Actor(imageID, startX, startY, 0, size, 0, sw) {
+    
+    m_planDistance = 0;
+    setvertSpeed(-4);
+}
+
+void Pedestrian::setPlanDistance(int num) {
+    m_planDistance = num;
+}
+
+int Pedestrian::getPlanDistance() const {
+    return m_planDistance;
+}
+
+void Pedestrian::makeNewPlanDistance() {
+    int randSpeed = 0;
+    while (randSpeed == 0) {
+        randSpeed = randInt(-3, 3);
+    }
+
+    sethorizSpeed(randSpeed);
+    setPlanDistance(randInt(4, 32));
+    if (gethorizSpeed() < 0)
+        setDirection(180);
+    
+    if (gethorizSpeed() > 0)
+        setDirection(0);
+}
+
+// Human Pedestrian =================================================================
+
+HumanPedestrian::HumanPedestrian(int startX, int startY, StudentWorld *sw) :
+    Pedestrian(4, startX, startY, 2, sw) {}
+
+void HumanPedestrian::doSomething() {
+    if (!isAlive())
+        return;
+    
+    if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
+        // decrement life
+        getWorld()->getPlayer()->setDead();
+    }
+    
+    moveDown();
+    
+    setPlanDistance(getPlanDistance()-1);
+    if (getPlanDistance() > 0)
+        return;
+    
+    makeNewPlanDistance();
+    
+}
+
+// ZombiePedestrian =========================================================
+
+ZombiePedestrian::ZombiePedestrian(int startX, int startY, StudentWorld *sw) :
+    Pedestrian(5, startX, startY, 3, sw) {
+        m_ticksUntilGrunt = 0;
+}
+
+void ZombiePedestrian::setTicksUntilGrunt(int ticks) {
+    m_ticksUntilGrunt = ticks;
+}
+
+int ZombiePedestrian::getTicksUntilGrunt() const {
+    return m_ticksUntilGrunt;
+}
+
+void ZombiePedestrian::doSomething() {
+    if (!isAlive())
+        return;
+    
+    if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
+        getWorld()->getPlayer()->decreaseHealth(5);
+        // zombie ped damaged 2 points
+        return;
+    }
+    
+    if (abs(getX() - getWorld()->getPlayerX()) <= 30 && getY() > getWorld()->getPlayerY()) {
+        setDirection(270);
+        if (getX() < getWorld()->getPlayerX())
+            sethorizSpeed(1);
+        else if (getX() > getWorld()->getPlayerX())
+            sethorizSpeed(-1);
+        else
+            sethorizSpeed(0);
+        
+        setTicksUntilGrunt(getTicksUntilGrunt()-1);
+        if (getTicksUntilGrunt() <= 0) {
+            getWorld()->playSound(SOUND_ZOMBIE_ATTACK);
+            setTicksUntilGrunt(20);
+        }
+    }
+    
+    moveDown();
+    
+    if (getPlanDistance() > 0) {
+        setPlanDistance(getPlanDistance()-1);
+        return;
+    }
+    
+    makeNewPlanDistance();
+    
+}
