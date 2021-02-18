@@ -8,6 +8,7 @@
 class StudentWorld;
 
 const double max_shift_per_tick = 4.0;
+const int max_travel_distance = 160;
 
 class Actor: public GraphObject {
 public:
@@ -15,7 +16,6 @@ public:
     virtual ~Actor() {};
     StudentWorld* getWorld() const;
     virtual void doSomething() = 0;
-    virtual bool isCollisionAvoidance();
     virtual bool canBeDamaged() const;
     bool isAlive() const;
     void setDead();
@@ -25,6 +25,7 @@ public:
     int getvertSpeed() const;
     int gethorizSpeed() const;
     void moveDown();
+    virtual bool hasHealth() const;
 private:
     StudentWorld* m_studentWorld;
     bool m_alive;
@@ -35,20 +36,43 @@ private:
 
 
 
-class GhostRacer : public Actor {
+class Character : public Actor {
+public:
+    Character(int imageID, int startX, int startY, int startDirection, double size, int health, StudentWorld *sw);
+    int getHealth() const;
+    void setHealth(int amount);
+    virtual bool hasHealth() const;
+private:
+    int m_health;
+};
+
+
+
+
+class Vehicle : public Character {
+public:
+    Vehicle(int imageID, int startX, int startY, int health, StudentWorld *sw);
+private:
+};
+
+
+
+
+class GhostRacer : public Vehicle {
 public:
     GhostRacer(int startX, int startY, StudentWorld* sw);
     virtual ~GhostRacer() {};
     virtual void doSomething();
     void computeDestination(int& destX, int& destY, int direction);
     bool isOuterLine() const;
-    int getHealth() const;
-    void decreaseHealth(int amount);
-    void increaseHealth(int amount);
     void spin();
+    int getCharges() const;
+    void addCharges(int num);
+    void shootWater();
 private:
-    int m_health;
+    int m_waterCharges;
 };
+
 
 
 class Obstacle : public Actor {
@@ -88,7 +112,6 @@ class Goodie : public Actor {
 public:
     Goodie(int imageID, int startX, int startY, int size, StudentWorld* sw);
     // hard code depth 2, same horiz and vert speed, direction 0, size changes
-  //  virtual bool isCollisionAvoidance();
     virtual bool canHeal();
     virtual bool canRefill();
     virtual bool canLevel();
@@ -118,9 +141,7 @@ private:
 };
 
 
-
-
-class Pedestrian : public Actor {
+class Pedestrian : public Character {
 public:
     Pedestrian(int imageID, int startX, int startY, int size, StudentWorld *sw);
     void setPlanDistance(int num);
@@ -145,6 +166,19 @@ public:
     int getTicksUntilGrunt() const;
 private:
     int m_ticksUntilGrunt;
+};
+
+
+
+
+class HolyWaterProjectile : public Actor {
+public:
+    HolyWaterProjectile(int startX, int startY, int startDirection, StudentWorld *sw);
+    virtual void doSomething();
+    void incrementPixels();
+    int getPixelsTraveled() const;
+private:
+    int m_pixelsTraveled;
 };
 
 

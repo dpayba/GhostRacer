@@ -16,10 +16,6 @@ StudentWorld* Actor::getWorld() const {
     return m_studentWorld;
 }
 
-bool Actor::isCollisionAvoidance() {
-    return true;
-}
-
 bool Actor::isAlive() const {
     return m_alive;
 }
@@ -52,6 +48,10 @@ int Actor::gethorizSpeed() const {
     return m_horizSpeed;
 }
 
+bool Actor::hasHealth() const {
+    return false;
+}
+
 void Actor::moveDown() {
     GhostRacer* player = getWorld()->getPlayer();
     int vertSpeed = getvertSpeed() - player->getvertSpeed();
@@ -67,23 +67,54 @@ void Actor::moveDown() {
     }
 }
 
-// Ghost Racer ========================================================================
+// Character ========================================================================
 
-GhostRacer::GhostRacer(int startX, int startY, StudentWorld* sw):
-    Actor(0, startX, startY, 90, 4.0, 0, sw) {
-        m_health = 100;
+Character::Character(int imageID, int startX, int startY, int startDirection, double size, int health, StudentWorld *sw) :
+Actor(imageID, startX, startY, startDirection, size, 0, sw) {
+    m_health = health;
 }
 
-int GhostRacer::getHealth() const{
+int Character::getHealth() const{
     return m_health;
 }
 
-void GhostRacer::decreaseHealth(int amount) {
-    m_health -= amount;
+void Character::setHealth(int amount) {
+    m_health = amount;
 }
 
-void GhostRacer::increaseHealth(int amount) {
-    m_health += amount;
+
+bool Character::hasHealth() const {
+    return true;
+}
+
+// Vehicle ========================================================================
+
+Vehicle::Vehicle(int imageID, int startX, int startY, int health, StudentWorld *sw) :
+Character(imageID, startX, startY, 90, 4.0, health, sw) {
+    
+}
+
+// Ghost Racer ========================================================================
+
+GhostRacer::GhostRacer(int startX, int startY, StudentWorld* sw):
+    Vehicle(0, startX, startY, 100, sw) {
+        m_waterCharges = 10;
+}
+
+int GhostRacer::getCharges() const {
+    return m_waterCharges;
+}
+
+void GhostRacer::addCharges(int num) {
+    m_waterCharges += num;
+}
+
+void GhostRacer::shootWater() {
+    if (m_waterCharges <= 0)
+        return;
+    m_waterCharges--;
+    getWorld()->playSound(SOUND_PLAYER_SPRAY);
+    getWorld()->addWater(getX(), getY(), getDirection());
 }
 
 void GhostRacer::spin() {
@@ -106,12 +137,14 @@ void GhostRacer::spin() {
 }
 
 void GhostRacer::doSomething() {
-    if (!isAlive())
+    if (getHealth() <= 0) {
+        setDead();
         return;
+    }
     
     if (getX() <= ROAD_CENTER - (ROAD_WIDTH / 2)) {
         if (getDirection() > 90) {
-            decreaseHealth(10);
+            setHealth(getHealth()-10);
             setDirection(82);
             getWorld()->playSound(SOUND_VEHICLE_CRASH);
         }
@@ -119,7 +152,7 @@ void GhostRacer::doSomething() {
     
     if (getX() >= ROAD_CENTER + (ROAD_WIDTH / 2)) {
         if (getDirection() < 90) {
-            decreaseHealth(10);
+            setHealth(getHealth()-10);
             setDirection(98);
             getWorld()->playSound(SOUND_VEHICLE_CRASH);
         }
@@ -127,30 +160,28 @@ void GhostRacer::doSomething() {
     
     int ch;
     if (getWorld()->getKey(ch)) {
-        bool directionKeyPressed = false;
         double currDirection = getDirection();
         int currSpeed = getvertSpeed();
         switch(ch) {
+            case KEY_PRESS_SPACE:
+                if (m_waterCharges > 0)
+                    shootWater();
+                break;
             case KEY_PRESS_LEFT:
                 if (currDirection < 114)
                     setDirection(currDirection+8);
-                
-                directionKeyPressed = true;
                 break;
             case KEY_PRESS_RIGHT:
                 if (currDirection > 66)
                     setDirection(currDirection-8);
-                directionKeyPressed = true;
                 break;
             case KEY_PRESS_UP:
                 if (currSpeed < 5)
                     setvertSpeed(currSpeed+1);
-                directionKeyPressed = true;
                 break;
             case KEY_PRESS_DOWN:
                 if (currSpeed > -1)
                     setvertSpeed(currSpeed-1);
-                directionKeyPressed = true;
                 break;
         }
     }
@@ -208,13 +239,13 @@ void Goodie::doSomething() {
     moveDown();
     if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
         if (canHeal()) {
-            getWorld()->getPlayer()->decreaseHealth(10);
+            getWorld()->getPlayer()->setHealth(getWorld()->getPlayer()->getHealth()-10);
             setDead();
             getWorld()->playSound(SOUND_GOT_GOODIE);
             // increase player score by 250
         }
         if (canRefill()) {
-            // incrase holy water by 10
+            getWorld()->getPlayer()->addCharges(10);
             setDead();
             getWorld()->playSound(SOUND_GOT_GOODIE);
             // increase player score by 50
@@ -273,7 +304,7 @@ bool SoulGoodie::canLevel() {
 
 // Pedestrian =====================================================================
 
-Pedestrian::Pedestrian(int imageID, int startX, int startY, int size, StudentWorld *sw) : Actor(imageID, startX, startY, 0, size, 0, sw) {
+Pedestrian::Pedestrian(int imageID, int startX, int startY, int size, StudentWorld *sw) : Character(imageID, startX, startY, 0, size, 2, sw) {
     
     m_planDistance = 0;
     setvertSpeed(-4);
@@ -305,7 +336,7 @@ void Pedestrian::makeNewPlanDistance() {
 // Human Pedestrian =================================================================
 
 HumanPedestrian::HumanPedestrian(int startX, int startY, StudentWorld *sw) :
-    Pedestrian(4, startX, startY, 2, sw) {}
+    Pedestrian(4, startX, startY, 2.0, sw) {}
 
 void HumanPedestrian::doSomething() {
     if (!isAlive())
@@ -342,12 +373,14 @@ int ZombiePedestrian::getTicksUntilGrunt() const {
 }
 
 void ZombiePedestrian::doSomething() {
-    if (!isAlive())
+    if (getHealth() <= 0) {
+        setDead();
         return;
-    
+    }
+        
     if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
-        getWorld()->getPlayer()->decreaseHealth(5);
-        // zombie ped damaged 2 points
+        getWorld()->getPlayer()->setHealth(getWorld()->getPlayer()->getHealth()-5);
+        setHealth(getHealth()-2);
         return;
     }
     
@@ -376,4 +409,43 @@ void ZombiePedestrian::doSomething() {
     
     makeNewPlanDistance();
     
+}
+
+
+// HolyWaterProjectile =========================================================
+
+HolyWaterProjectile::HolyWaterProjectile(int startX, int startY, int startDirection, StudentWorld *sw) :
+    Actor(7, startX, startY, startDirection, 1, 1, sw) {
+        m_pixelsTraveled = 0;
+}
+
+void HolyWaterProjectile::incrementPixels() {
+    m_pixelsTraveled++;
+}
+
+int HolyWaterProjectile::getPixelsTraveled() const {
+    return m_pixelsTraveled;
+}
+
+void HolyWaterProjectile::doSomething() {
+    if (!isAlive())
+        return;
+    
+    if (getWorld()->overlapsWithProjectile(getX(), getY(), getRadius())) {
+        // damage other object with 1 hp
+        setDead();
+        return;
+    }
+    
+    moveForward(SPRITE_HEIGHT);
+    
+    if (getX() < 0 || getY() < 0 || getX() > VIEW_WIDTH || getY() > VIEW_HEIGHT) {
+        setDead();
+        return;
+    }
+    
+    if (getPixelsTraveled() == max_travel_distance)
+        setDead();
+    
+    incrementPixels();
 }

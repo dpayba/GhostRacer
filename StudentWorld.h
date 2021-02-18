@@ -20,7 +20,10 @@ public:
     int getPlayerX() const;
     int getPlayerY() const;
     double getPlayerRadius() const;
+    bool overlapsWith(int x1, int y1, double r1, int x2, int y2, double r2) const;
     bool overlapsWithRacer(int x1, int y1, double radius) const;
+    bool overlapsWithProjectile(int x1, int y1, double radius) const;
+    void addWater(int x1, int y1, double direction);
 private:
     GhostRacer* m_player;
     std::list<Actor*> m_actors;

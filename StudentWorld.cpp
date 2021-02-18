@@ -154,6 +154,16 @@ double StudentWorld::getPlayerRadius() const {
     return m_player->getRadius();
 }
 
+bool StudentWorld::overlapsWith(int x1, int y1, double r1, int x2, int y2, double r2) const {
+    double deltaX = abs(x1-x2);
+    double deltaY = abs(y1-y2);
+    double radiusSum = r1 + r2;
+    
+    if (deltaX < radiusSum * 0.25 && deltaY < radiusSum * 0.6)
+        return true;
+    return false;
+}
+
 bool StudentWorld::overlapsWithRacer(int x1, int y1, double radius) const {
     double deltaX = abs(x1-getPlayerX());
     double deltaY = abs(y1-getPlayerY());
@@ -162,5 +172,23 @@ bool StudentWorld::overlapsWithRacer(int x1, int y1, double radius) const {
     if (deltaX < radiusSum * 0.25 && deltaY < radiusSum * 0.6)
         return true;
     return false;
+    
+}
+
+bool StudentWorld::overlapsWithProjectile(int x1, int y1, double radius) const {
+    list<Actor*>::const_iterator it = m_actors.begin();
+    while (it != m_actors.end()) {
+        Actor* a = *it;
+        if (a->isAlive() && a->canBeDamaged() && overlapsWith(x1, y1, radius, a->getX(), a->getY(), a->getRadius()))
+            return true;
+        it++;
+    }
+    return false;
+}
+
+void StudentWorld::addWater(int x1, int y1, double direction) {
+    double deltaX = cos(direction * M_PI / 180) * SPRITE_HEIGHT;
+    double deltaY = sin(direction * M_PI / 180) * SPRITE_HEIGHT;
+    m_actors.push_front(new HolyWaterProjectile(deltaX, deltaY, direction, this));
     
 }
