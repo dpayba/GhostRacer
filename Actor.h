@@ -9,6 +9,7 @@ class StudentWorld;
 
 const double max_shift_per_tick = 4.0;
 const int max_travel_distance = 160;
+//const double M_PI = 3.14159;
 
 class Actor: public GraphObject {
 public:
@@ -79,7 +80,7 @@ private:
 
 class ZombieCab : public Vehicle {
 public:
-    ZombieCab(int startX, int startY, StudentWorld* sw);
+    ZombieCab(int startX, int startY, int startSpeed, StudentWorld* sw);
     virtual void doSomething();
     bool damagedGhostRacer() const;
     void racerDamaged();

@@ -18,6 +18,8 @@ GameWorld* createStudentWorld(string assetPath)
 StudentWorld::StudentWorld(string assetPath): GameWorld(assetPath) {
     m_player = nullptr;
     m_levelFinished = false;
+    m_laneFound = false;
+    m_actorFound = false;
 }
 
 StudentWorld::~StudentWorld() {
@@ -29,7 +31,6 @@ int StudentWorld::init()
     m_levelFinished = false;
     
     m_player = new GhostRacer(128, 32, this);
-    
     double nObjects = VIEW_HEIGHT / SPRITE_HEIGHT;
     double mObjects = VIEW_HEIGHT / (4 * SPRITE_HEIGHT);
     double leftEdge = ROAD_CENTER - (ROAD_WIDTH / 2);
@@ -50,7 +51,6 @@ int StudentWorld::init()
 
 int StudentWorld::move()
 {
-
     Actor* actor = m_actors.back();
     double newBorderY = VIEW_HEIGHT-SPRITE_HEIGHT;
     double deltaY = newBorderY-(actor->getY());
@@ -98,7 +98,47 @@ int StudentWorld::move()
     
     double chanceZombieCab = max(100 - getLevel() * 10, 20);
     if (randInt(0, chanceZombieCab-1) == 0) {
-        
+        int i = randInt(0, 2);
+        if (i == 0) {
+            if (!evalLeft()) {
+                i = randInt(0, 1);
+                if (i == 0) {
+                    if (!evalMiddle())
+                        evalRight();
+                }
+                else {
+                    if (!evalRight())
+                        evalMiddle();
+                }
+            }
+        }
+        else if (i == 1) {
+            if (!evalMiddle()) {
+                i = randInt(0, 1);
+                if (i == 0) {
+                    if (!evalLeft())
+                        evalRight();
+                }
+                else {
+                    if (!evalRight())
+                        evalLeft();
+                }
+            }
+        }
+        else {
+            if (!evalRight()) {
+                i = randInt(0, 1);
+                if (i == 0) {
+                    if (!evalLeft())
+                        evalMiddle();
+                }
+                else {
+                    if (!evalMiddle())
+                        evalLeft();
+                }
+            }
+        }
+     
     }
     
     m_player->doSomething();
@@ -221,3 +261,240 @@ bool StudentWorld::actorFront(int x1, int y1) {
     }
     return false;
 }
+
+bool StudentWorld::actorBehind(int x1, int y1) {
+    list<Actor*>::const_iterator it = m_actors.begin();
+    while (it != m_actors.end()) {
+        Actor* a = *it;
+        if (a->isAlive() && a->canBeDamagedByWater()) {
+            if (a->getX() == x1) {
+                if (abs(a->getY()-y1) < 96)
+                    return true;
+            }
+        }
+        it++;
+    }
+    return false;
+}
+
+void StudentWorld::setLaneFound() {
+    m_laneFound = true;
+}
+
+bool StudentWorld::getLaneFound() {
+    return m_laneFound;
+}
+
+void StudentWorld::resetLane() {
+    m_laneFound = false;
+}
+
+void StudentWorld::setActorNotFound() {
+    m_actorFound = true;
+}
+
+bool StudentWorld::getActorNotFound() {
+    return m_actorFound;
+}
+
+void StudentWorld::resetActor() {
+    m_actorFound = false;
+}
+
+bool StudentWorld::evalLeft() {
+    list<Actor*>::const_iterator it = m_actors.begin();
+    Actor* maxActor = nullptr;
+    int closestPosition = 255;
+    while (it != m_actors.end()) {
+        Actor* a = *it;
+        if (a->canBeDamaged()) {
+            if (a->getX() >= left_border && a->getX() <= left_white_line) {
+                if (a->getY() <= closestPosition) {
+                    closestPosition = a->getY();
+                    maxActor = a;
+                }
+            }
+        }
+        it++;
+    }
+    
+    if (getPlayerX() >= left_border && getPlayerX() <= left_white_line) {
+        if (getPlayerY() <= closestPosition) {
+            closestPosition = getPlayerY();
+            maxActor = getPlayer();
+        }
+    }
+    
+    if (maxActor == nullptr || maxActor->getY() > VIEW_HEIGHT/3) {
+        double startY = SPRITE_HEIGHT/2;
+        double startSpeed = getPlayer()->getvertSpeed() + randInt(2, 4);
+        m_actors.push_front(new ZombieCab(ROAD_CENTER-ROAD_WIDTH/3, startY, startSpeed, this));
+        return true;
+    }
+    
+    it = m_actors.begin();
+    maxActor = nullptr;
+    closestPosition = 0;
+    while (it != m_actors.end()) {
+        Actor* a = *it;
+        if (a->canBeDamaged()) {
+           // cout << (a->getY());
+            if (a->getX() >= left_border && a->getX() <= left_white_line) {
+                if (a->getY() >= closestPosition) {
+                    closestPosition = a->getY();
+                    maxActor = a;
+                }
+            }
+        }
+        it++;
+    }
+    
+    if (getPlayerX() >= left_border && getPlayerX() <= left_white_line) {
+        if (getPlayerY() >= closestPosition) {
+            closestPosition = getPlayerY();
+            maxActor = getPlayer();
+        }
+    }
+    
+    if (maxActor == nullptr || maxActor->getY() < VIEW_HEIGHT*2/3) {
+        double startY = VIEW_HEIGHT-SPRITE_HEIGHT/2;
+        double startSpeed = getPlayer()->getvertSpeed() - randInt(2, 4);
+        m_actors.push_front(new ZombieCab(ROAD_CENTER-ROAD_WIDTH/3, startY, startSpeed, this));
+        return true;
+    }
+    
+    return false;
+}
+
+
+bool StudentWorld::evalMiddle() {
+    list<Actor*>::const_iterator it = m_actors.begin();
+    Actor* maxActor = nullptr;
+    int closestPosition = 255;
+    while (it != m_actors.end()) {
+        Actor* a = *it;
+        if (a->canBeDamaged()) {
+            if (a->getX() >= left_white_line && a->getX() <= right_white_line) {
+                if (a->getY() <= closestPosition) {
+                    closestPosition = a->getY();
+                    maxActor = a;
+                }
+            }
+        }
+        it++;
+    }
+    
+    if (getPlayerX() >= left_white_line && getPlayerX() <= right_white_line) {
+        if (getPlayerY() <= closestPosition) {
+            closestPosition = getPlayerY();
+            maxActor = getPlayer();
+        }
+    }
+    
+    if (maxActor == nullptr || maxActor->getY() > VIEW_HEIGHT/3) {
+        double startY = SPRITE_HEIGHT/2;
+        double startSpeed = getPlayer()->getvertSpeed() + randInt(2, 4);
+        m_actors.push_front(new ZombieCab(ROAD_CENTER, startY, startSpeed, this));
+        return true;
+    }
+    
+    it = m_actors.begin();
+    maxActor = nullptr;
+    closestPosition = 0;
+    while (it != m_actors.end()) {
+        Actor* a = *it;
+        if (a->canBeDamaged()) {
+            if (a->getX() >= left_white_line && a->getX() <= right_white_line) {
+                if (a->getY() >= closestPosition) {
+                    closestPosition = a->getY();
+                    maxActor = a;
+                }
+            }
+        }
+        it++;
+    }
+    
+    if (getPlayerX() >= left_white_line && getPlayerX() <= right_white_line) {
+        if (getPlayerY() >= closestPosition) {
+            closestPosition = getPlayerY();
+            maxActor = getPlayer();
+        }
+    }
+    
+    if (maxActor == nullptr || maxActor->getY() > VIEW_HEIGHT/3) {
+        double startY = VIEW_HEIGHT-SPRITE_HEIGHT/2;
+        double startSpeed = getPlayer()->getvertSpeed() - randInt(2, 4);
+        m_actors.push_front(new ZombieCab(ROAD_CENTER, startY, startSpeed, this));
+        return true;
+    }
+    
+    return false;
+}
+
+
+bool StudentWorld::evalRight() {
+    list<Actor*>::const_iterator it = m_actors.begin();
+    Actor* maxActor = nullptr;
+    int closestPosition = 255;
+    while (it != m_actors.end()) {
+        Actor* a = *it;
+        if (a->canBeDamaged()) {
+            if (a->getX() >= right_white_line && a->getX() <= right_border) {
+                if (a->getY() <= closestPosition) {
+                    closestPosition = a->getY();
+                    maxActor = a;
+                }
+            }
+        }
+        it++;
+    }
+    
+    if (getPlayerX() >= right_white_line && getPlayerX() <= right_border) {
+        if (getPlayerY() <= closestPosition) {
+            closestPosition = getPlayerY();
+            maxActor = getPlayer();
+        }
+    }
+    
+    if (maxActor == nullptr || maxActor->getY() > VIEW_HEIGHT/3) {
+        double startY = SPRITE_HEIGHT/2;
+        double startSpeed = getPlayer()->getvertSpeed() + randInt(2, 4);
+        m_actors.push_front(new ZombieCab(ROAD_CENTER+ROAD_WIDTH/3, startY, startSpeed, this));
+        return true;
+    }
+    
+    it = m_actors.begin();
+    maxActor = nullptr;
+    closestPosition = 0;
+    while (it != m_actors.end()) {
+        Actor* a = *it;
+        if (a->canBeDamaged()) {
+            if (a->getX() >= right_white_line && a->getX() <= right_border) {
+                if (a->getY() >= closestPosition) {
+                    closestPosition = a->getY();
+                    maxActor = a;
+                }
+            }
+        }
+        it++;
+    }
+    
+    if (getPlayerX() >= right_white_line && getPlayerX() <= right_border) {
+        if (getPlayerY() >= closestPosition) {
+            closestPosition = getPlayerY();
+            maxActor = getPlayer();
+        }
+    }
+    
+    if (maxActor == nullptr || maxActor->getY() > VIEW_HEIGHT/3) {
+        double startY = VIEW_HEIGHT-SPRITE_HEIGHT/2;
+        double startSpeed = getPlayer()->getvertSpeed() - randInt(2, 4);
+        m_actors.push_front(new ZombieCab(ROAD_CENTER+ROAD_WIDTH/3, startY, startSpeed, this));
+        return true;
+    }
+    
+    return false;
+}
+
+
+

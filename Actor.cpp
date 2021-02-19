@@ -478,10 +478,11 @@ void HolyWaterProjectile::doSomething() {
 
 // ZombieCab =========================================================
 
-ZombieCab::ZombieCab(int startX, int startY, StudentWorld* sw) :
+ZombieCab::ZombieCab(int startX, int startY, int startSpeed, StudentWorld* sw) :
     Vehicle(IID_ZOMBIE_CAB, startX, startY, 3, sw) {
         m_damagedRacer = false;
         m_planDistance = 0;
+        setvertSpeed(startSpeed);
 }
 
 bool ZombieCab::damagedGhostRacer() const {
@@ -525,11 +526,12 @@ void ZombieCab::doSomething() {
     }
     
     moveDown();
+    
     if (getvertSpeed() > player->getvertSpeed() && getWorld()->actorFront(getX(), getY())) {
         setvertSpeed(getvertSpeed()-0.5);
     }
     
-    if (getvertSpeed() <= player->getvertSpeed() && getWorld()->actorFront(getX(), getY())) {
+    if (getvertSpeed() <= player->getvertSpeed() && getWorld()->actorBehind(getX(), getY())) {
         setvertSpeed(getvertSpeed()+0.5);
     }
     
@@ -539,5 +541,6 @@ void ZombieCab::doSomething() {
         return;
     
     setPlanDistance(randInt(4, 32));
-    setvertSpeed(getvertSpeed() + double(randInt(-2, 2)));
+    setvertSpeed(getvertSpeed() + randInt(-2, 2));
 }
+
