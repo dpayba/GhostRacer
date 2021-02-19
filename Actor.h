@@ -17,21 +17,25 @@ public:
     StudentWorld* getWorld() const;
     virtual void doSomething() = 0;
     virtual bool canBeDamaged() const;
+    virtual bool canBeDamagedByWater() const;
     bool isAlive() const;
     void setDead();
     bool blocksMovement() const;
-    void setvertSpeed(int speed);
-    void sethorizSpeed(int speed);
-    int getvertSpeed() const;
-    int gethorizSpeed() const;
+    void setvertSpeed(double speed);
+    void sethorizSpeed(double speed);
+    double getvertSpeed() const;
+    double gethorizSpeed() const;
     void moveDown();
     virtual bool hasHealth() const;
+    virtual bool canDestroyOnHit() const;
+    int getHealth() const;
+    void setHealth(int amount);
 private:
     StudentWorld* m_studentWorld;
     bool m_alive;
-    int m_vertSpeed;
-    int m_horizSpeed;
-    
+    double m_vertSpeed;
+    double m_horizSpeed;
+    int m_health;
 };
 
 
@@ -39,11 +43,10 @@ private:
 class Character : public Actor {
 public:
     Character(int imageID, int startX, int startY, int startDirection, double size, int health, StudentWorld *sw);
-    int getHealth() const;
-    void setHealth(int amount);
     virtual bool hasHealth() const;
+    virtual bool canBeDamaged() const;
+    virtual bool canBeDamagedByWater() const;
 private:
-    int m_health;
 };
 
 
@@ -63,6 +66,7 @@ public:
     GhostRacer(int startX, int startY, StudentWorld* sw);
     virtual ~GhostRacer() {};
     virtual void doSomething();
+    virtual bool canBeDamagedByWater() const;
     void computeDestination(int& destX, int& destY, int direction);
     bool isOuterLine() const;
     void spin();
@@ -73,6 +77,18 @@ private:
     int m_waterCharges;
 };
 
+class ZombieCab : public Vehicle {
+public:
+    ZombieCab(int startX, int startY, StudentWorld* sw);
+    virtual void doSomething();
+    bool damagedGhostRacer() const;
+    void racerDamaged();
+    void setPlanDistance(int num);
+    int getPlanDistance() const;
+private:
+    bool m_damagedRacer;
+    int m_planDistance;
+};
 
 
 class Obstacle : public Actor {
@@ -100,7 +116,6 @@ class OilSlick : public Obstacle {
 public:
     OilSlick(int startX, int startY, int size, StudentWorld *sw);
     virtual ~OilSlick() {};
-    virtual bool canBeDamaged() const;
     virtual void doSomething();
 private:
 };
@@ -116,6 +131,7 @@ public:
     virtual bool canRefill();
     virtual bool canLevel();
     virtual void doSomething();
+    virtual bool canDestroyOnHit() const;
 private:
 };
  
@@ -137,6 +153,7 @@ class SoulGoodie : public Goodie {
 public:
     SoulGoodie(int startX, int startY, StudentWorld* sw);
     virtual bool canLevel();
+    virtual bool canDestroyOnHit() const;
 private:
 };
 
@@ -173,7 +190,7 @@ private:
 
 class HolyWaterProjectile : public Actor {
 public:
-    HolyWaterProjectile(int startX, int startY, int startDirection, StudentWorld *sw);
+    HolyWaterProjectile(double startX, double startY, int direction, StudentWorld *sw);
     virtual void doSomething();
     void incrementPixels();
     int getPixelsTraveled() const;

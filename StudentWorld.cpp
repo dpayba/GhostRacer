@@ -96,6 +96,11 @@ int StudentWorld::move()
         m_actors.push_front(new ZombiePedestrian(xLocation, VIEW_HEIGHT, this));
     }
     
+    double chanceZombieCab = max(100 - getLevel() * 10, 20);
+    if (randInt(0, chanceZombieCab-1) == 0) {
+        
+    }
+    
     m_player->doSomething();
     list<Actor*>::iterator it;
     for (it = m_actors.begin(); it != m_actors.end(); it++) {
@@ -154,6 +159,10 @@ double StudentWorld::getPlayerRadius() const {
     return m_player->getRadius();
 }
 
+int StudentWorld::getPlayerDirection() const {
+    return m_player->getDirection();
+}
+
 bool StudentWorld::overlapsWith(int x1, int y1, double r1, int x2, int y2, double r2) const {
     double deltaX = abs(x1-x2);
     double deltaY = abs(y1-y2);
@@ -179,16 +188,36 @@ bool StudentWorld::overlapsWithProjectile(int x1, int y1, double radius) const {
     list<Actor*>::const_iterator it = m_actors.begin();
     while (it != m_actors.end()) {
         Actor* a = *it;
-        if (a->isAlive() && a->canBeDamaged() && overlapsWith(x1, y1, radius, a->getX(), a->getY(), a->getRadius()))
+        if (a->isAlive() && (a->canBeDamagedByWater() || a->canDestroyOnHit()) && overlapsWith(x1, y1, radius, a->getX(), a->getY(), a->getRadius())) {
+            if (a->canDestroyOnHit()) {
+                a->setDead();
+            }
+            else {
+                a->setHealth(a->getHealth()-1);
+            }
             return true;
+        }
         it++;
     }
     return false;
 }
 
-void StudentWorld::addWater(int x1, int y1, double direction) {
-    double deltaX = cos(direction * M_PI / 180) * SPRITE_HEIGHT;
-    double deltaY = sin(direction * M_PI / 180) * SPRITE_HEIGHT;
-    m_actors.push_front(new HolyWaterProjectile(deltaX, deltaY, direction, this));
-    
+void StudentWorld::addWater(int x1, int y1) {
+    int direction = getPlayerDirection();
+    m_actors.push_front(new HolyWaterProjectile(x1, y1, direction, this));
+}
+
+bool StudentWorld::actorFront(int x1, int y1) {
+    list<Actor*>::const_iterator it = m_actors.begin();
+    while (it != m_actors.end()) {
+        Actor* a = *it;
+        if (a->isAlive() && a->canBeDamaged()) {
+            if (a->getX() == x1) {
+                if (abs(a->getY()-y1) < 96)
+                    return true;
+            }
+        }
+        it++;
+    }
+    return false;
 }
