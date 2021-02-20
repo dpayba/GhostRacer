@@ -260,19 +260,19 @@ void Goodie::doSomething() {
             getWorld()->getPlayer()->setHealth(getWorld()->getPlayer()->getHealth()-10);
             setDead();
             getWorld()->playSound(SOUND_GOT_GOODIE);
-            // increase player score by 250
+            getWorld()->increaseScore(250);
         }
         if (canRefill()) {
             getWorld()->getPlayer()->addCharges(10);
             setDead();
             getWorld()->playSound(SOUND_GOT_GOODIE);
-            // increase player score by 50
+            getWorld()->increaseScore(50);
         }
         if (canLevel()) {
-            // increase number of souls saved, may result in level end. studentworld must communicate to framework
+            getWorld()->decreaseSoulsToSave();
             setDead();
             getWorld()->playSound(SOUND_GOT_SOUL);
-            // increase score by 100
+            getWorld()->increaseScore(100);
         }
     }
     if (canLevel())
@@ -503,8 +503,10 @@ int ZombieCab::getPlanDistance() const {
 
 void ZombieCab::doSomething() {
     GhostRacer* player = getWorld()->getPlayer();
-    if (!isAlive())
+    if (getHealth() <= 0) {
+        setDead();
         return;
+    }
     
     if (!damagedGhostRacer() && getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
         getWorld()->playSound(SOUND_VEHICLE_CRASH);
@@ -527,11 +529,11 @@ void ZombieCab::doSomething() {
     
     moveDown();
     
-    if (getvertSpeed() > player->getvertSpeed() && getWorld()->actorFront(getX(), getY())) {
+    if (getvertSpeed() > player->getvertSpeed() && getWorld()->actorFront(getLane(), getY())) {
         setvertSpeed(getvertSpeed()-0.5);
     }
     
-    if (getvertSpeed() <= player->getvertSpeed() && getWorld()->actorBehind(getX(), getY())) {
+    if (getvertSpeed() <= player->getvertSpeed() && getWorld()->actorFront(getLane(), getY())) {
         setvertSpeed(getvertSpeed()+0.5);
     }
     
@@ -544,3 +546,11 @@ void ZombieCab::doSomething() {
     setvertSpeed(getvertSpeed() + randInt(-2, 2));
 }
 
+int ZombieCab::getLane() {
+    if (getX() >= left_border && getX() <= left_white_line)
+        return 0;
+    else if (getX() >= left_white_line && getX() <= right_white_line)
+        return 1;
+    else
+        return 2;
+}

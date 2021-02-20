@@ -9,7 +9,6 @@ class StudentWorld;
 
 const double max_shift_per_tick = 4.0;
 const int max_travel_distance = 160;
-//const double M_PI = 3.14159;
 
 class Actor: public GraphObject {
 public:
@@ -86,6 +85,7 @@ public:
     void racerDamaged();
     void setPlanDistance(int num);
     int getPlanDistance() const;
+    int getLane();
 private:
     bool m_damagedRacer;
     int m_planDistance;

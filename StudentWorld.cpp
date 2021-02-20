@@ -6,6 +6,8 @@
 #include <sstream>
 #include <list>
 #include <iostream>
+#include <iomanip>
+#include <cmath>
 using namespace std;
 
 GameWorld* createStudentWorld(string assetPath)
@@ -20,6 +22,7 @@ StudentWorld::StudentWorld(string assetPath): GameWorld(assetPath) {
     m_levelFinished = false;
     m_laneFound = false;
     m_actorFound = false;
+    m_soulsToSave = 0;
 }
 
 StudentWorld::~StudentWorld() {
@@ -45,6 +48,8 @@ int StudentWorld::init()
         m_actors.push_back(new BorderLine(2, leftEdge + (ROAD_WIDTH/3), i * (4*SPRITE_HEIGHT), this));
         m_actors.push_back(new BorderLine(2, rightEdge - (ROAD_WIDTH/3), i * (4*SPRITE_HEIGHT), this));
     }
+    
+    setSoulsToSave(getLevel());
     
     return GWSTATUS_CONTINUE_GAME;
 }
@@ -152,6 +157,9 @@ int StudentWorld::move()
         }
     }
     
+    if (getSoulsToSave() == 0)
+        return GWSTATUS_FINISHED_LEVEL;
+    
     
     it = m_actors.begin();
     while(it != m_actors.end()) {
@@ -162,6 +170,25 @@ int StudentWorld::move()
         }
         it++;
     }
+    
+    // Game Status
+    string separateSpaces = " ";
+    ostringstream oss;
+    oss.fill('0');
+    oss << "Score: ";
+    if (getScore() >= 0)
+        oss << setw(6) << getScore() << separateSpaces;
+    else
+        oss << "-" << setw(5) << abs(getScore()) << separateSpaces;
+    
+    oss << "Lvl: " << getLevel() << separateSpaces;
+    oss << "Souls2Save: " << getSoulsToSave() << separateSpaces;
+    oss << "Lives: " << getLives() << separateSpaces;
+    oss << "Health: " << m_player->getHealth() << separateSpaces;
+    oss << "Sprays: " << m_player->getCharges() << separateSpaces;
+    string gameStats = oss.str();
+    setGameStatText(gameStats);
+    
     
     return GWSTATUS_CONTINUE_GAME;
 }
@@ -182,6 +209,18 @@ void StudentWorld::cleanUp()
 }
 
 // =========================================
+
+void StudentWorld::setSoulsToSave(int num) {
+    m_soulsToSave = num;
+}
+
+int StudentWorld::getSoulsToSave() {
+    return m_soulsToSave;
+}
+
+void StudentWorld::decreaseSoulsToSave() {
+    m_soulsToSave--;
+}
 
 GhostRacer* StudentWorld::getPlayer() const {
     return m_player;
@@ -247,35 +286,73 @@ void StudentWorld::addWater(int x1, int y1) {
     m_actors.push_front(new HolyWaterProjectile(x1, y1, direction, this));
 }
 
-bool StudentWorld::actorFront(int x1, int y1) {
+bool StudentWorld::actorFront(int lane, int yPos) {
     list<Actor*>::const_iterator it = m_actors.begin();
     while (it != m_actors.end()) {
         Actor* a = *it;
-        if (a->isAlive() && a->canBeDamaged()) {
-            if (a->getX() == x1) {
-                if (abs(a->getY()-y1) < 96)
-                    return true;
+        if (lane == 0) {
+            if (a->isAlive() && a->canBeDamaged()) {
+                if (a->getX() >= left_border && a->getX() <= left_white_line) {
+                    if (abs(a->getY()-yPos) < 96)
+                        return true;
+                }
+            }
+        }
+        if (lane == 1) {
+            if (a->isAlive() && a->canBeDamaged()) {
+                if (a->getX() >= left_white_line && a->getX() <= right_white_line) {
+                    if (abs(a->getY()-yPos) < 96)
+                        return true;
+                }
+            }
+        }
+        if (lane == 2) {
+            if (a->isAlive() && a->canBeDamaged()) {
+                if (a->getX() >= right_white_line && a->getX() <= right_border) {
+                    if (abs(a->getY()-yPos) < 96)
+                        return true;
+                }
             }
         }
         it++;
     }
+    
+    if (lane == 0) {
+        if (getPlayerX() >= left_border && getPlayerX() <= left_white_line) {
+            if (abs(getPlayerY()-yPos) < 96)
+                return true;
+        }
+    }
+    if (lane == 1) {
+        if (getPlayerX() >= left_white_line && getPlayerX() <= right_white_line) {
+            if (abs(getPlayerY()-yPos) < 96)
+                return true;
+        }
+    }
+    if (lane == 2) {
+        if (getPlayerX() >= right_white_line && getPlayerX() <= right_border) {
+            if (abs(getPlayerY()-yPos) < 96)
+                return true;
+        }
+    }
+    
     return false;
 }
 
-bool StudentWorld::actorBehind(int x1, int y1) {
-    list<Actor*>::const_iterator it = m_actors.begin();
-    while (it != m_actors.end()) {
-        Actor* a = *it;
-        if (a->isAlive() && a->canBeDamagedByWater()) {
-            if (a->getX() == x1) {
-                if (abs(a->getY()-y1) < 96)
-                    return true;
-            }
-        }
-        it++;
-    }
-    return false;
-}
+//bool StudentWorld::actorBehind(int lane, int yPos) {
+//    list<Actor*>::const_iterator it = m_actors.begin();
+//    while (it != m_actors.end()) {
+//        Actor* a = *it;
+//        if (a->isAlive() && a->canBeDamagedByWater()) {
+//            if (a->getX() == x1) {
+//                if (abs(a->getY()-y1) < 96)
+//                    return true;
+//            }
+//        }
+//        it++;
+//    }
+//    return false;
+//}
 
 void StudentWorld::setLaneFound() {
     m_laneFound = true;

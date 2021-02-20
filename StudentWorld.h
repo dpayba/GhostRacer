@@ -22,6 +22,9 @@ public:
     virtual int move();
     virtual void cleanUp();
     GhostRacer* getPlayer() const;
+    void setSoulsToSave(int num);
+    int getSoulsToSave();
+    void decreaseSoulsToSave();
     int getPlayerX() const;
     int getPlayerY() const;
     double getPlayerRadius() const;
@@ -30,13 +33,11 @@ public:
     bool overlapsWithRacer(int x1, int y1, double radius) const;
     bool overlapsWithProjectile(int x1, int y1, double radius) const;
     void addWater(int x1, int y1);
-    bool actorFront(int x1, int y1);
-    bool actorBehind(int x1, int y1);
+    bool actorFront(int lane, int yPos);
+   // bool actorBehind(int lane, int yPos);
     void setLaneFound();
     bool getLaneFound();
     void resetLane();
-//    Actor* checkBottomScreen(Actor*& actor, int leftBorder, int rightBorder);
-//    Actor* checkTopScreen(Actor*& actor, int leftBorder, int rightBorder);
     void setActorNotFound();
     bool getActorNotFound();
     void resetActor();
@@ -49,6 +50,7 @@ private:
     bool m_laneFound;
     bool m_actorFound;
     bool m_levelFinished;
+    int m_soulsToSave;
 };
 
 #endif // STUDENTWORLD_H_
