@@ -206,30 +206,18 @@ void StudentWorld::cleanUp()
     
 }
 
-// =========================================
+// Accessors
 
-void StudentWorld::setSoulsToSave(int num) {
-    m_soulsToSave = num;
+GhostRacer* StudentWorld::getPlayer() const {
+    return m_player;
 }
 
 int StudentWorld::getSoulsToSave() {
     return m_soulsToSave;
 }
 
-void StudentWorld::decreaseSoulsToSave() {
-    m_soulsToSave--;
-}
-
-void StudentWorld::decreaseBonusPoints() {
-    m_bonusPoints--;
-}
-
 int StudentWorld::getBonusPoints() {
     return m_bonusPoints;
-}
-
-GhostRacer* StudentWorld::getPlayer() const {
-    return m_player;
 }
 
 int StudentWorld::getPlayerX() const {
@@ -248,52 +236,64 @@ int StudentWorld::getPlayerDirection() const {
     return m_player->getDirection();
 }
 
-bool StudentWorld::overlapsWith(int x1, int y1, double r1, int x2, int y2, double r2) const {
-    double deltaX = abs(x1-x2);
-    double deltaY = abs(y1-y2);
-    double radiusSum = r1 + r2;
-    
-    if (deltaX < radiusSum * 0.25 && deltaY < radiusSum * 0.6)
-        return true;
-    return false;
+bool StudentWorld::getLaneFound() {
+    return m_laneFound;
 }
 
-bool StudentWorld::overlapsWithRacer(int x1, int y1, double radius) const {
-    double deltaX = abs(x1-getPlayerX());
-    double deltaY = abs(y1-getPlayerY());
-    double radiusSum = radius + getPlayerRadius();
-    
-    if (deltaX < radiusSum * 0.25 && deltaY < radiusSum * 0.6)
-        return true;
-    return false;
-    
+bool StudentWorld::getActorNotFound() {
+    return m_actorFound;
 }
 
-bool StudentWorld::overlapsWithProjectile(int x1, int y1, double radius) const {
-    list<Actor*>::const_iterator it = m_actors.begin();
-    while (it != m_actors.end()) {
-        Actor* a = *it;
-        if (a->isAlive() && (a->canBeDamagedByWater() || a->canDestroyOnHit()) && overlapsWith(x1, y1, radius, a->getX(), a->getY(), a->getRadius())) {
-            if (a->canDestroyOnHit()) {
-                a->performGoodieEffect();
-                a->setDead();
-            }
-            else if (a->redirectOnImpact()) {
-                a->reverseDirection();
-            }
-            else {
-                a->setHealth(a->getHealth()-1);
-            }
-            return true;
-        }
-        it++;
-    }
-    return false;
+// Mutators
+
+void StudentWorld::setSoulsToSave(int num) {
+    m_soulsToSave = num;
+}
+
+void StudentWorld::decreaseSoulsToSave() {
+    m_soulsToSave--;
+}
+
+void StudentWorld::decreaseBonusPoints() {
+    m_bonusPoints--;
 }
 
 void StudentWorld::addWater(int x1, int y1) {
     int direction = getPlayerDirection();
     m_actors.push_front(new HolyWaterProjectile(x1, y1, direction, this));
+}
+
+void StudentWorld::setLaneFound() {
+    m_laneFound = true;
+}
+
+void StudentWorld::resetLane() {
+    m_laneFound = false;
+}
+
+void StudentWorld::setActorNotFound() {
+    m_actorFound = true;
+}
+
+void StudentWorld::resetActor() {
+    m_actorFound = false;
+}
+
+void StudentWorld::addHealingGoodie(int x1, int y1) {
+    m_actors.push_front(new HealingGoodie(x1, y1, this));
+}
+
+void StudentWorld::addOilSlick(int x1, int y1) {
+    int size = randInt(2, 5);
+    m_actors.push_front(new OilSlick(x1, y1, size, this));
+}
+
+void StudentWorld::heal() {
+    getPlayer()->setHealth(getPlayer()->getHealth()+10);
+}
+
+void StudentWorld::addSprays() {
+    getPlayer()->addCharges(10);
 }
 
 bool StudentWorld::actorFront(int lane, int yPos) {
@@ -349,29 +349,48 @@ bool StudentWorld::actorFront(int lane, int yPos) {
     return false;
 }
 
-void StudentWorld::setLaneFound() {
-    m_laneFound = true;
+bool StudentWorld::overlapsWith(int x1, int y1, double r1, int x2, int y2, double r2) const {
+    double deltaX = abs(x1-x2);
+    double deltaY = abs(y1-y2);
+    double radiusSum = r1 + r2;
+    
+    if (deltaX < radiusSum * 0.25 && deltaY < radiusSum * 0.6)
+        return true;
+    return false;
 }
 
-bool StudentWorld::getLaneFound() {
-    return m_laneFound;
+bool StudentWorld::overlapsWithRacer(int x1, int y1, double radius) const {
+    double deltaX = abs(x1-getPlayerX());
+    double deltaY = abs(y1-getPlayerY());
+    double radiusSum = radius + getPlayerRadius();
+    
+    if (deltaX < radiusSum * 0.25 && deltaY < radiusSum * 0.6)
+        return true;
+    return false;
 }
 
-void StudentWorld::resetLane() {
-    m_laneFound = false;
+bool StudentWorld::overlapsWithProjectile(int x1, int y1, double radius) const {
+    list<Actor*>::const_iterator it = m_actors.begin();
+    while (it != m_actors.end()) {
+        Actor* a = *it;
+        if (a->isAlive() && (a->canBeDamagedByWater() || a->canDestroyOnHit()) && overlapsWith(x1, y1, radius, a->getX(), a->getY(), a->getRadius())) {
+            if (a->canDestroyOnHit()) {
+                a->performGoodieEffect();
+                a->setDead();
+            }
+            else if (a->redirectOnImpact()) {
+                a->reverseDirection();
+            }
+            else {
+                a->setHealth(a->getHealth()-1);
+            }
+            return true;
+        }
+        it++;
+    }
+    return false;
 }
 
-void StudentWorld::setActorNotFound() {
-    m_actorFound = true;
-}
-
-bool StudentWorld::getActorNotFound() {
-    return m_actorFound;
-}
-
-void StudentWorld::resetActor() {
-    m_actorFound = false;
-}
 
 bool StudentWorld::evalLeft() {
     list<Actor*>::const_iterator it = m_actors.begin();
@@ -565,21 +584,4 @@ bool StudentWorld::evalRight() {
     }
     
     return false;
-}
-
-void StudentWorld::addHealingGoodie(int x1, int y1) {
-    m_actors.push_front(new HealingGoodie(x1, y1, this));
-}
-
-void StudentWorld::addOilSlick(int x1, int y1) {
-    int size = randInt(2, 5);
-    m_actors.push_front(new OilSlick(x1, y1, size, this));
-}
-
-void StudentWorld::heal() {
-    getPlayer()->setHealth(getPlayer()->getHealth()+10);
-}
-
-void StudentWorld::addSprays() {
-    getPlayer()->addCharges(10);
 }
