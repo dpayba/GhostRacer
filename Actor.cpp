@@ -65,8 +65,14 @@ int Actor::getHealth() const{
 }
 
 void Actor::setHealth(int amount) {
+    if (amount > 100) {
+        m_health = 100;
+        return;
+    }
     m_health = amount;
 }
+
+void Actor::performGoodieEffect() {}
 
 void Actor::moveDown() {
     GhostRacer* player = getWorld()->getPlayer();
@@ -81,6 +87,19 @@ void Actor::moveDown() {
         setDead();
         return;
     }
+}
+
+bool Actor::redirectOnImpact() const {
+    return false;
+}
+
+void Actor::reverseDirection() {
+    sethorizSpeed(gethorizSpeed()*-1);
+    if (getDirection() == 0)
+        setDirection(180);
+    else
+        setDirection(0);
+    getWorld()->playSound(SOUND_PED_HURT);
 }
 
 // Character ========================================================================
@@ -161,6 +180,7 @@ bool GhostRacer::canBeDamagedByWater() const {
 void GhostRacer::doSomething() {
     if (getHealth() <= 0) {
         setDead();
+        getWorld()->playSound(SOUND_PLAYER_DIE);
         return;
     }
     
@@ -253,28 +273,28 @@ Goodie::Goodie(int imageID, int startX, int startY, int size, StudentWorld* sw) 
         setvertSpeed(-4);
 }
 
+void Goodie::performGoodieEffect() {
+    if (canHeal()) {
+        getWorld()->heal();
+        setDead();
+        getWorld()->playSound(SOUND_GOT_GOODIE);
+        getWorld()->increaseScore(250);
+    }
+    if (canRefill()) {
+        
+        getWorld()->addSprays();
+        setDead();
+        getWorld()->playSound(SOUND_GOT_GOODIE);
+        getWorld()->increaseScore(50);
+    }
+}
+
 void Goodie::doSomething() {
     moveDown();
     if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
-        if (canHeal()) {
-            getWorld()->getPlayer()->setHealth(getWorld()->getPlayer()->getHealth()-10);
-            setDead();
-            getWorld()->playSound(SOUND_GOT_GOODIE);
-            getWorld()->increaseScore(250);
-        }
-        if (canRefill()) {
-            getWorld()->getPlayer()->addCharges(10);
-            setDead();
-            getWorld()->playSound(SOUND_GOT_GOODIE);
-            getWorld()->increaseScore(50);
-        }
-        if (canLevel()) {
-            getWorld()->decreaseSoulsToSave();
-            setDead();
-            getWorld()->playSound(SOUND_GOT_SOUL);
-            getWorld()->increaseScore(100);
-        }
+        giveGoodie();
     }
+   
     if (canLevel())
         setDirection(getDirection() - 10);
     
@@ -306,13 +326,29 @@ bool HealingGoodie::canHeal() {
     return true;
 }
 
+void HealingGoodie::giveGoodie() {
+    getWorld()->heal();
+    setDead();
+    getWorld()->playSound(SOUND_GOT_GOODIE);
+    getWorld()->increaseScore(250);
+}
+
 // Holy Water Goodie ============================================================
  
 HolyWaterGoodie::HolyWaterGoodie(int startX, int startY, StudentWorld* sw) :
-    Goodie(IID_HOLY_WATER_GOODIE, startX, startY, 2, sw) {}
+    Goodie(IID_HOLY_WATER_GOODIE, startX, startY, 2, sw) {
+        setDirection(90);
+    }
 
 bool HolyWaterGoodie::canRefill() {
     return true;
+}
+
+void HolyWaterGoodie::giveGoodie() {
+    getWorld()->addSprays();
+    setDead();
+    getWorld()->playSound(SOUND_GOT_GOODIE);
+    getWorld()->increaseScore(50);
 }
 
 // Soul Goodie ============================================================
@@ -320,12 +356,19 @@ bool HolyWaterGoodie::canRefill() {
 SoulGoodie::SoulGoodie(int startX, int startY, StudentWorld* sw) :
     Goodie(IID_SOUL_GOODIE, startX, startY, 4, sw) {}
 
+bool SoulGoodie::canDestroyOnHit() const {
+    return false;
+}
+
 bool SoulGoodie::canLevel() {
     return true;
 }
 
-bool SoulGoodie::canDestroyOnHit() const {
-    return false;
+void SoulGoodie::giveGoodie() {
+    getWorld()->decreaseSoulsToSave();
+    setDead();
+    getWorld()->playSound(SOUND_GOT_SOUL);
+    getWorld()->increaseScore(100);
 }
 
 // Pedestrian =====================================================================
@@ -364,12 +407,15 @@ void Pedestrian::makeNewPlanDistance() {
 HumanPedestrian::HumanPedestrian(int startX, int startY, StudentWorld *sw) :
     Pedestrian(IID_HUMAN_PED, startX, startY, 2.0, sw) {}
 
+bool HumanPedestrian::redirectOnImpact() const {
+    return true;
+}
+
 void HumanPedestrian::doSomething() {
     if (!isAlive())
         return;
     
     if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
-        // decrement life
         getWorld()->getPlayer()->setDead();
     }
     
@@ -399,10 +445,20 @@ int ZombiePedestrian::getTicksUntilGrunt() const {
 }
 
 void ZombiePedestrian::doSomething() {
+    if (getHealth() == 1)
+        getWorld()->playSound(SOUND_PED_HURT);
+    
     if (getHealth() <= 0) {
         setDead();
+        getWorld()->playSound(SOUND_PED_DIE);
+        if (!getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
+            if (randInt(0, 4) == 0)
+                getWorld()->addHealingGoodie(getX(), getY());
+        }
+        getWorld()->increaseScore(150);
         return;
     }
+    
         
     if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
         getWorld()->getPlayer()->setHealth(getWorld()->getPlayer()->getHealth()-5);
@@ -505,6 +561,10 @@ void ZombieCab::doSomething() {
     GhostRacer* player = getWorld()->getPlayer();
     if (getHealth() <= 0) {
         setDead();
+        getWorld()->playSound(SOUND_VEHICLE_DIE);
+        if (randInt(0, 4) == 0)
+            getWorld()->addOilSlick(getX(), getY());
+        getWorld()->increaseScore(200);
         return;
     }
     
@@ -531,10 +591,12 @@ void ZombieCab::doSomething() {
     
     if (getvertSpeed() > player->getvertSpeed() && getWorld()->actorFront(getLane(), getY())) {
         setvertSpeed(getvertSpeed()-0.5);
+        return;
     }
     
     if (getvertSpeed() <= player->getvertSpeed() && getWorld()->actorFront(getLane(), getY())) {
         setvertSpeed(getvertSpeed()+0.5);
+        return;
     }
     
     setPlanDistance(getPlanDistance()-1);

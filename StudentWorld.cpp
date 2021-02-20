@@ -19,10 +19,10 @@ GameWorld* createStudentWorld(string assetPath)
 
 StudentWorld::StudentWorld(string assetPath): GameWorld(assetPath) {
     m_player = nullptr;
-    m_levelFinished = false;
     m_laneFound = false;
     m_actorFound = false;
     m_soulsToSave = 0;
+    m_bonusPoints = 0;
 }
 
 StudentWorld::~StudentWorld() {
@@ -31,7 +31,7 @@ StudentWorld::~StudentWorld() {
 
 int StudentWorld::init()
 {
-    m_levelFinished = false;
+    m_bonusPoints = 5000;
     
     m_player = new GhostRacer(128, 32, this);
     double nObjects = VIEW_HEIGHT / SPRITE_HEIGHT;
@@ -49,7 +49,7 @@ int StudentWorld::init()
         m_actors.push_back(new BorderLine(2, rightEdge - (ROAD_WIDTH/3), i * (4*SPRITE_HEIGHT), this));
     }
     
-    setSoulsToSave(getLevel());
+    setSoulsToSave(2 * getLevel() + 5);
     
     return GWSTATUS_CONTINUE_GAME;
 }
@@ -109,11 +109,11 @@ int StudentWorld::move()
                 i = randInt(0, 1);
                 if (i == 0) {
                     if (!evalMiddle())
-                        evalRight();
+                        if (!evalRight()) {}
                 }
                 else {
                     if (!evalRight())
-                        evalMiddle();
+                        if (!evalMiddle()) {}
                 }
             }
         }
@@ -122,11 +122,11 @@ int StudentWorld::move()
                 i = randInt(0, 1);
                 if (i == 0) {
                     if (!evalLeft())
-                        evalRight();
+                        if (!evalRight()) {}
                 }
                 else {
                     if (!evalRight())
-                        evalLeft();
+                        if (!evalLeft()) {}
                 }
             }
         }
@@ -139,7 +139,7 @@ int StudentWorld::move()
                 }
                 else {
                     if (!evalMiddle())
-                        evalLeft();
+                        if (!evalLeft()) {}
                 }
             }
         }
@@ -157,8 +157,10 @@ int StudentWorld::move()
         }
     }
     
-    if (getSoulsToSave() == 0)
+    if (getSoulsToSave() == 0) {
+        increaseScore(getBonusPoints());
         return GWSTATUS_FINISHED_LEVEL;
+    }
     
     
     it = m_actors.begin();
@@ -172,24 +174,20 @@ int StudentWorld::move()
     }
     
     // Game Status
-    string separateSpaces = " ";
+    string separateSpaces = "  ";
     ostringstream oss;
     oss.fill('0');
-    oss << "Score: ";
-    if (getScore() >= 0)
-        oss << setw(6) << getScore() << separateSpaces;
-    else
-        oss << "-" << setw(5) << abs(getScore()) << separateSpaces;
-    
+    oss << "Score: " <<getScore() << separateSpaces;
     oss << "Lvl: " << getLevel() << separateSpaces;
     oss << "Souls2Save: " << getSoulsToSave() << separateSpaces;
     oss << "Lives: " << getLives() << separateSpaces;
     oss << "Health: " << m_player->getHealth() << separateSpaces;
     oss << "Sprays: " << m_player->getCharges() << separateSpaces;
+    oss << "Bonus: " << getBonusPoints() << separateSpaces;
     string gameStats = oss.str();
     setGameStatText(gameStats);
     
-    
+    decreaseBonusPoints();
     return GWSTATUS_CONTINUE_GAME;
 }
 
@@ -220,6 +218,14 @@ int StudentWorld::getSoulsToSave() {
 
 void StudentWorld::decreaseSoulsToSave() {
     m_soulsToSave--;
+}
+
+void StudentWorld::decreaseBonusPoints() {
+    m_bonusPoints--;
+}
+
+int StudentWorld::getBonusPoints() {
+    return m_bonusPoints;
 }
 
 GhostRacer* StudentWorld::getPlayer() const {
@@ -269,7 +275,11 @@ bool StudentWorld::overlapsWithProjectile(int x1, int y1, double radius) const {
         Actor* a = *it;
         if (a->isAlive() && (a->canBeDamagedByWater() || a->canDestroyOnHit()) && overlapsWith(x1, y1, radius, a->getX(), a->getY(), a->getRadius())) {
             if (a->canDestroyOnHit()) {
+                a->performGoodieEffect();
                 a->setDead();
+            }
+            else if (a->redirectOnImpact()) {
+                a->reverseDirection();
             }
             else {
                 a->setHealth(a->getHealth()-1);
@@ -339,21 +349,6 @@ bool StudentWorld::actorFront(int lane, int yPos) {
     return false;
 }
 
-//bool StudentWorld::actorBehind(int lane, int yPos) {
-//    list<Actor*>::const_iterator it = m_actors.begin();
-//    while (it != m_actors.end()) {
-//        Actor* a = *it;
-//        if (a->isAlive() && a->canBeDamagedByWater()) {
-//            if (a->getX() == x1) {
-//                if (abs(a->getY()-y1) < 96)
-//                    return true;
-//            }
-//        }
-//        it++;
-//    }
-//    return false;
-//}
-
 void StudentWorld::setLaneFound() {
     m_laneFound = true;
 }
@@ -415,7 +410,6 @@ bool StudentWorld::evalLeft() {
     while (it != m_actors.end()) {
         Actor* a = *it;
         if (a->canBeDamaged()) {
-           // cout << (a->getY());
             if (a->getX() >= left_border && a->getX() <= left_white_line) {
                 if (a->getY() >= closestPosition) {
                     closestPosition = a->getY();
@@ -573,5 +567,19 @@ bool StudentWorld::evalRight() {
     return false;
 }
 
+void StudentWorld::addHealingGoodie(int x1, int y1) {
+    m_actors.push_front(new HealingGoodie(x1, y1, this));
+}
 
+void StudentWorld::addOilSlick(int x1, int y1) {
+    int size = randInt(2, 5);
+    m_actors.push_front(new OilSlick(x1, y1, size, this));
+}
 
+void StudentWorld::heal() {
+    getPlayer()->setHealth(getPlayer()->getHealth()+10);
+}
+
+void StudentWorld::addSprays() {
+    getPlayer()->addCharges(10);
+}

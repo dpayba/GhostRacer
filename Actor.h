@@ -14,22 +14,27 @@ class Actor: public GraphObject {
 public:
     Actor(int imageID, int startX, int startY, int startDirection, double size, int depth, StudentWorld* sw);
     virtual ~Actor() {};
-    StudentWorld* getWorld() const;
     virtual void doSomething() = 0;
+    // Accessors
+    StudentWorld* getWorld() const;
     virtual bool canBeDamaged() const;
     virtual bool canBeDamagedByWater() const;
     bool isAlive() const;
-    void setDead();
     bool blocksMovement() const;
-    void setvertSpeed(double speed);
-    void sethorizSpeed(double speed);
     double getvertSpeed() const;
     double gethorizSpeed() const;
-    void moveDown();
     virtual bool hasHealth() const;
     virtual bool canDestroyOnHit() const;
     int getHealth() const;
+    // Mutators
+    void setDead();
+    void setvertSpeed(double speed);
+    void sethorizSpeed(double speed);
+    void moveDown();
     void setHealth(int amount);
+    virtual void performGoodieEffect();
+    virtual bool redirectOnImpact() const;
+    void reverseDirection();
 private:
     StudentWorld* m_studentWorld;
     bool m_alive;
@@ -127,13 +132,14 @@ private:
 class Goodie : public Actor {
 public:
     Goodie(int imageID, int startX, int startY, int size, StudentWorld* sw);
-    // hard code depth 2, same horiz and vert speed, direction 0, size changes
-    virtual bool canHeal();
-    virtual bool canRefill();
-    virtual bool canLevel();
     virtual void doSomething();
     virtual bool canDestroyOnHit() const;
+    virtual void performGoodieEffect();
+    virtual bool canLevel();
+    virtual bool canHeal();
+    virtual bool canRefill();
 private:
+    virtual void giveGoodie() = 0;
 };
  
 class HealingGoodie : public Goodie {
@@ -141,6 +147,7 @@ public:
     HealingGoodie(int startX, int startY, StudentWorld* sw);
     virtual bool canHeal();
 private:
+    virtual void giveGoodie();
 };
 
 class HolyWaterGoodie : public Goodie {
@@ -148,14 +155,16 @@ public:
     HolyWaterGoodie(int startX, int startY, StudentWorld* sw);
     virtual bool canRefill();
 private:
+    virtual void giveGoodie();
 };
 
 class SoulGoodie : public Goodie {
 public:
     SoulGoodie(int startX, int startY, StudentWorld* sw);
-    virtual bool canLevel();
     virtual bool canDestroyOnHit() const;
+    virtual bool canLevel();
 private:
+    virtual void giveGoodie();
 };
 
 
@@ -173,6 +182,7 @@ class HumanPedestrian : public Pedestrian {
 public:
     HumanPedestrian(int startX, int startY, StudentWorld *sw);
     virtual void doSomething();
+    virtual bool redirectOnImpact() const;
 private:
 };
 

@@ -16,31 +16,39 @@ const double right_border = ROAD_CENTER+ROAD_WIDTH/2;
 class StudentWorld : public GameWorld
 {
 public:
+    // Given
     StudentWorld(std::string assetPath);
     virtual ~StudentWorld();
     virtual int init();
     virtual int move();
     virtual void cleanUp();
+    // Accessors
     GhostRacer* getPlayer() const;
-    void setSoulsToSave(int num);
     int getSoulsToSave();
-    void decreaseSoulsToSave();
+    int getBonusPoints();
     int getPlayerX() const;
     int getPlayerY() const;
     double getPlayerRadius() const;
     int getPlayerDirection() const;
+    bool getLaneFound();
+    bool getActorNotFound();
+    // Mutators
+    void setSoulsToSave(int num);
+    void decreaseSoulsToSave();
+    void decreaseBonusPoints();
+    void addWater(int x1, int y1);
+    void setLaneFound();
+    void resetLane();
+    void setActorNotFound();
+    void resetActor();
+    void addHealingGoodie(int x1, int y1);
+    void addOilSlick(int x1, int y1);
+    void heal();
+    void addSprays();
+    bool actorFront(int lane, int yPos);
     bool overlapsWith(int x1, int y1, double r1, int x2, int y2, double r2) const;
     bool overlapsWithRacer(int x1, int y1, double radius) const;
     bool overlapsWithProjectile(int x1, int y1, double radius) const;
-    void addWater(int x1, int y1);
-    bool actorFront(int lane, int yPos);
-   // bool actorBehind(int lane, int yPos);
-    void setLaneFound();
-    bool getLaneFound();
-    void resetLane();
-    void setActorNotFound();
-    bool getActorNotFound();
-    void resetActor();
     bool evalLeft();
     bool evalMiddle();
     bool evalRight();
@@ -49,8 +57,8 @@ private:
     std::list<Actor*> m_actors;
     bool m_laneFound;
     bool m_actorFound;
-    bool m_levelFinished;
     int m_soulsToSave;
+    int m_bonusPoints;
 };
 
 #endif // STUDENTWORLD_H_
