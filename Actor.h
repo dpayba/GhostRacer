@@ -20,7 +20,6 @@ public:
     virtual bool canBeDamaged() const;
     virtual bool canBeDamagedByWater() const;
     bool isAlive() const;
-    bool blocksMovement() const;
     double getvertSpeed() const;
     double gethorizSpeed() const;
     virtual bool hasHealth() const;
@@ -44,55 +43,16 @@ private:
 };
 
 
-
 class Character : public Actor {
 public:
     Character(int imageID, int startX, int startY, int startDirection, double size, int health, StudentWorld *sw);
+    virtual ~Character() {};
     virtual bool hasHealth() const;
     virtual bool canBeDamaged() const;
     virtual bool canBeDamagedByWater() const;
-private:
-};
-
-
-
-
-class Vehicle : public Character {
-public:
-    Vehicle(int imageID, int startX, int startY, int health, StudentWorld *sw);
-private:
-};
-
-
-
-
-class GhostRacer : public Vehicle {
-public:
-    GhostRacer(int startX, int startY, StudentWorld* sw);
-    virtual ~GhostRacer() {};
-    virtual void doSomething();
-    virtual bool canBeDamagedByWater() const;
-    void computeDestination(int& destX, int& destY, int direction);
-    bool isOuterLine() const;
-    void spin();
-    int getCharges() const;
-    void addCharges(int num);
-    void shootWater();
-private:
-    int m_waterCharges;
-};
-
-class ZombieCab : public Vehicle {
-public:
-    ZombieCab(int startX, int startY, int startSpeed, StudentWorld* sw);
-    virtual void doSomething();
-    bool damagedGhostRacer() const;
-    void racerDamaged();
-    void setPlanDistance(int num);
+    virtual void setPlanDistance(int num);
     int getPlanDistance() const;
-    int getLane();
 private:
-    bool m_damagedRacer;
     int m_planDistance;
 };
 
@@ -105,18 +65,102 @@ private:
 };
 
 
+class Goodie : public Actor {
+public:
+    Goodie(int imageID, int startX, int startY, int size, StudentWorld* sw);
+    virtual ~Goodie() {};
+    virtual void doSomething();
+    virtual bool canDestroyOnHit() const;
+    virtual void performGoodieEffect();
+    virtual bool canLevel() const;
+    virtual bool canHeal() const;
+    virtual bool canRefill() const;
+private:
+    virtual void giveGoodie() = 0;
+};
+
+
+class HolyWaterProjectile : public Actor {
+public:
+    HolyWaterProjectile(double startX, double startY, int direction, StudentWorld *sw);
+    virtual ~HolyWaterProjectile() {};
+    virtual void doSomething();
+private:
+    int m_pixelsTraveled;
+    void incrementPixels();
+    int getPixelsTraveled() const;
+};
+
+
+class Vehicle : public Character {
+public:
+    Vehicle(int imageID, int startX, int startY, int health, StudentWorld *sw);
+    virtual ~Vehicle() {};
+private:
+};
+
+class GhostRacer : public Vehicle {
+public:
+    GhostRacer(int startX, int startY, StudentWorld* sw);
+    virtual ~GhostRacer() {};
+    virtual void doSomething();
+    virtual bool canBeDamagedByWater() const;
+    int getCharges() const;
+    void addCharges(int num);
+    void spin();
+private:
+    int m_waterCharges;
+    void shootWater();
+};
+
+class ZombieCab : public Vehicle {
+public:
+    ZombieCab(int startX, int startY, int startSpeed, StudentWorld* sw);
+    virtual ~ZombieCab() {};
+    virtual void doSomething();
+private:
+    bool m_damagedRacer;
+    int getLane() const;
+    bool damagedGhostRacer() const;
+    void racerDamaged();
+};
+
+
+class Pedestrian : public Character {
+public:
+    Pedestrian(int imageID, int startX, int startY, int size, StudentWorld *sw);
+    virtual ~Pedestrian() {};
+    void makeNewPlanDistance();
+private:
+    int m_planDistance;
+};
+
+class HumanPedestrian : public Pedestrian {
+public:
+    HumanPedestrian(int startX, int startY, StudentWorld *sw);
+    virtual ~HumanPedestrian() {};
+    virtual void doSomething();
+    virtual bool redirectOnImpact() const;
+};
+
+class ZombiePedestrian : public Pedestrian {
+public:
+    ZombiePedestrian(int startX, int startY, StudentWorld* sw);
+    virtual ~ZombiePedestrian() {};
+    virtual void doSomething();
+private:
+    int m_ticksUntilGrunt;
+    void setTicksUntilGrunt(int ticks);
+    int getTicksUntilGrunt() const;
+};
+
+
 class BorderLine : public Obstacle {
 public:
     BorderLine(int imageID, int startX, int startY, StudentWorld* sw);
     virtual ~BorderLine() {};
     virtual void doSomething();
-    bool blocksMovement() const;
-private:
-    int m_racerSpeed;
-    
 };
-
-
 
 class OilSlick : public Obstacle {
 public:
@@ -126,26 +170,12 @@ public:
 private:
 };
 
-
-
-
-class Goodie : public Actor {
-public:
-    Goodie(int imageID, int startX, int startY, int size, StudentWorld* sw);
-    virtual void doSomething();
-    virtual bool canDestroyOnHit() const;
-    virtual void performGoodieEffect();
-    virtual bool canLevel();
-    virtual bool canHeal();
-    virtual bool canRefill();
-private:
-    virtual void giveGoodie() = 0;
-};
  
 class HealingGoodie : public Goodie {
 public:
     HealingGoodie(int startX, int startY, StudentWorld* sw);
-    virtual bool canHeal();
+    virtual ~HealingGoodie() {};
+    virtual bool canHeal() const;
 private:
     virtual void giveGoodie();
 };
@@ -153,7 +183,8 @@ private:
 class HolyWaterGoodie : public Goodie {
 public:
     HolyWaterGoodie(int startX, int startY, StudentWorld* sw);
-    virtual bool canRefill();
+    virtual ~HolyWaterGoodie() {};
+    virtual bool canRefill() const;
 private:
     virtual void giveGoodie();
 };
@@ -161,56 +192,11 @@ private:
 class SoulGoodie : public Goodie {
 public:
     SoulGoodie(int startX, int startY, StudentWorld* sw);
+    virtual ~SoulGoodie() {};
     virtual bool canDestroyOnHit() const;
-    virtual bool canLevel();
+    virtual bool canLevel() const;
 private:
     virtual void giveGoodie();
 };
-
-
-class Pedestrian : public Character {
-public:
-    Pedestrian(int imageID, int startX, int startY, int size, StudentWorld *sw);
-    void setPlanDistance(int num);
-    int getPlanDistance() const;
-    void makeNewPlanDistance();
-private:
-    int m_planDistance;
-};
-
-class HumanPedestrian : public Pedestrian {
-public:
-    HumanPedestrian(int startX, int startY, StudentWorld *sw);
-    virtual void doSomething();
-    virtual bool redirectOnImpact() const;
-private:
-};
-
-class ZombiePedestrian : public Pedestrian {
-public:
-    ZombiePedestrian(int startX, int startY, StudentWorld* sw);
-    virtual void doSomething();
-    void setTicksUntilGrunt(int ticks);
-    int getTicksUntilGrunt() const;
-private:
-    int m_ticksUntilGrunt;
-};
-
-
-
-
-class HolyWaterProjectile : public Actor {
-public:
-    HolyWaterProjectile(double startX, double startY, int direction, StudentWorld *sw);
-    virtual void doSomething();
-    void incrementPixels();
-    int getPixelsTraveled() const;
-private:
-    int m_pixelsTraveled;
-};
-
-
-
-
 
 #endif // ACTOR_H_

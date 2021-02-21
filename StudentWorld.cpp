@@ -40,13 +40,13 @@ int StudentWorld::init()
     double rightEdge = ROAD_CENTER + (ROAD_WIDTH / 2);
     
     for (int i = 0; i < nObjects; i++) {
-        m_actors.push_front(new BorderLine(1, leftEdge, i*SPRITE_HEIGHT, this));
-        m_actors.push_front(new BorderLine(1, rightEdge, i*SPRITE_HEIGHT, this));
+        m_actors.push_front(new BorderLine(IID_YELLOW_BORDER_LINE, leftEdge, i*SPRITE_HEIGHT, this));
+        m_actors.push_front(new BorderLine(IID_YELLOW_BORDER_LINE, rightEdge, i*SPRITE_HEIGHT, this));
     }
     
     for (int i = 0; i < mObjects; i++) {
-        m_actors.push_back(new BorderLine(2, leftEdge + (ROAD_WIDTH/3), i * (4*SPRITE_HEIGHT), this));
-        m_actors.push_back(new BorderLine(2, rightEdge - (ROAD_WIDTH/3), i * (4*SPRITE_HEIGHT), this));
+        m_actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE, leftEdge + (ROAD_WIDTH/3), i * (4*SPRITE_HEIGHT), this));
+        m_actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE, rightEdge - (ROAD_WIDTH/3), i * (4*SPRITE_HEIGHT), this));
     }
     
     setSoulsToSave(2 * getLevel() + 5);
@@ -61,13 +61,13 @@ int StudentWorld::move()
     double deltaY = newBorderY-(actor->getY());
     
     if (deltaY >= SPRITE_HEIGHT) {
-        m_actors.push_front(new BorderLine(1, ROAD_CENTER - (ROAD_WIDTH/2), newBorderY, this));
-        m_actors.push_front(new BorderLine(1, ROAD_CENTER + (ROAD_WIDTH/2), newBorderY, this));
+        m_actors.push_front(new BorderLine(IID_YELLOW_BORDER_LINE, ROAD_CENTER - (ROAD_WIDTH/2), newBorderY, this));
+        m_actors.push_front(new BorderLine(IID_YELLOW_BORDER_LINE, ROAD_CENTER + (ROAD_WIDTH/2), newBorderY, this));
     }
 
     if (deltaY >= 4*SPRITE_HEIGHT) {
-        m_actors.push_back(new BorderLine(2, ROAD_CENTER - ((ROAD_WIDTH/2)-(ROAD_WIDTH/3)), newBorderY, this));
-        m_actors.push_back(new BorderLine(2, ROAD_CENTER + ((ROAD_WIDTH/2)-(ROAD_WIDTH/3)), newBorderY, this));
+        m_actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE, ROAD_CENTER - ((ROAD_WIDTH/2)-(ROAD_WIDTH/3)), newBorderY, this));
+        m_actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE, ROAD_CENTER + ((ROAD_WIDTH/2)-(ROAD_WIDTH/3)), newBorderY, this));
     }
     
     double chanceOilSlick = max(150-getLevel()*10, 40);
