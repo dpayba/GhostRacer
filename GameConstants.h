@@ -5,7 +5,6 @@
 #include <utility>
 
 // image IDs for the game objects
-
 const int IID_GHOST_RACER = 0;
 const int IID_YELLOW_BORDER_LINE = 1;
 const int IID_WHITE_BORDER_LINE = 2;
