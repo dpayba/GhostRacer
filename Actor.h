@@ -9,6 +9,10 @@ class StudentWorld;
 
 const double max_shift_per_tick = 4.0;
 const int max_travel_distance = 160;
+const double left_border = ROAD_CENTER-ROAD_WIDTH/2;
+const double left_white_line = ROAD_CENTER-ROAD_WIDTH/2+ROAD_WIDTH/3;
+const double right_white_line = ROAD_CENTER+ROAD_WIDTH/2-ROAD_WIDTH/3;
+const double right_border = ROAD_CENTER+ROAD_WIDTH/2;
 
 class Actor: public GraphObject {
 public:
@@ -50,7 +54,7 @@ public:
     virtual bool hasHealth() const;
     virtual bool canBeDamaged() const;
     virtual bool canBeDamagedByWater() const;
-    virtual void setPlanDistance(int num);
+    void setPlanDistance(int num);
     int getPlanDistance() const;
 private:
     int m_planDistance;
@@ -87,7 +91,7 @@ public:
     virtual void doSomething();
 private:
     int m_pixelsTraveled;
-    void incrementPixels();
+    void incrementPixels(int amount);
     int getPixelsTraveled() const;
 };
 
