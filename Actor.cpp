@@ -200,7 +200,7 @@ void HolyWaterProjectile::doSomething() {
     }
     
     moveForward(SPRITE_HEIGHT);
-    incrementPixels();
+    incrementPixels(SPRITE_HEIGHT);
     
     if (getX() < 0 || getY() < 0 || getX() > VIEW_WIDTH || getY() > VIEW_HEIGHT) {
         setDead();
@@ -212,8 +212,8 @@ void HolyWaterProjectile::doSomething() {
     
 }
 
-void HolyWaterProjectile::incrementPixels() {
-    m_pixelsTraveled++;
+void HolyWaterProjectile::incrementPixels(int amount) {
+    m_pixelsTraveled+=amount;
 }
 
 int HolyWaterProjectile::getPixelsTraveled() const {
@@ -371,12 +371,12 @@ void ZombieCab::doSomething() {
     
     moveDown();
     
-    if (getvertSpeed() > player->getvertSpeed() && getWorld()->actorFront(getLane(), getY())) {
+    if (getvertSpeed() > player->getvertSpeed() && getWorld()->actorFront(getLane(), this)) {
         setvertSpeed(getvertSpeed()-0.5);
         return;
     }
     
-    if (getvertSpeed() <= player->getvertSpeed() && getWorld()->actorFront(getLane(), getY())) {
+    if (getvertSpeed() <= player->getvertSpeed() && getWorld()->actorBehind(getLane(), this)) {
         setvertSpeed(getvertSpeed()+0.5);
         return;
     }
@@ -391,9 +391,9 @@ void ZombieCab::doSomething() {
 }
 
 int ZombieCab::getLane() const {
-    if (getX() >= left_border && getX() <= left_white_line)
+    if (getX() >= left_border && getX() < left_white_line)
         return 0;
-    else if (getX() >= left_white_line && getX() <= right_white_line)
+    else if (getX() >= left_white_line && getX() < right_white_line)
         return 1;
     else
         return 2;
