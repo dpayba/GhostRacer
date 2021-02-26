@@ -19,8 +19,6 @@ GameWorld* createStudentWorld(string assetPath)
 
 StudentWorld::StudentWorld(string assetPath): GameWorld(assetPath) {
     m_player = nullptr;
-    m_laneFound = false;
-    m_actorFound = false;
     m_soulsToSave = 0;
     m_bonusPoints = 0;
 }
@@ -106,44 +104,23 @@ int StudentWorld::move()
         int i = randInt(0, 2);
         if (i == 0) {
             if (!evalLeft()) {
-                i = randInt(0, 1);
-                if (i == 0) {
-                    if (!evalMiddle())
-                        if (!evalRight()) {}
-                }
-                else {
-                    if (!evalRight())
-                        if (!evalMiddle()) {}
-                }
+                if (!evalMiddle())
+                    if (!evalRight()) {}
+
             }
         }
         else if (i == 1) {
             if (!evalMiddle()) {
-                i = randInt(0, 1);
-                if (i == 0) {
-                    if (!evalLeft())
-                        if (!evalRight()) {}
-                }
-                else {
-                    if (!evalRight())
-                        if (!evalLeft()) {}
-                }
+                if (!evalLeft())
+                    if (!evalRight()) {}
             }
         }
         else {
             if (!evalRight()) {
-                i = randInt(0, 1);
-                if (i == 0) {
                     if (!evalLeft())
-                        evalMiddle();
-                }
-                else {
-                    if (!evalMiddle())
-                        if (!evalLeft()) {}
-                }
+                        if (!evalMiddle()) {}
             }
         }
-     
     }
     
     m_player->doSomething();
@@ -159,6 +136,7 @@ int StudentWorld::move()
     
     if (getSoulsToSave() == 0) {
         increaseScore(getBonusPoints());
+        playSound(SOUND_FINISHED_LEVEL);
         return GWSTATUS_FINISHED_LEVEL;
     }
     
@@ -187,7 +165,9 @@ int StudentWorld::move()
     string gameStats = oss.str();
     setGameStatText(gameStats);
     
-    decreaseBonusPoints();
+    if (getBonusPoints() > 0)
+        decreaseBonusPoints();
+    
     return GWSTATUS_CONTINUE_GAME;
 }
 
@@ -236,14 +216,6 @@ int StudentWorld::getPlayerDirection() const {
     return m_player->getDirection();
 }
 
-bool StudentWorld::getLaneFound() {
-    return m_laneFound;
-}
-
-bool StudentWorld::getActorNotFound() {
-    return m_actorFound;
-}
-
 // Mutators
 
 void StudentWorld::setSoulsToSave(int num) {
@@ -263,22 +235,6 @@ void StudentWorld::addWater(int x1, int y1) {
     m_actors.push_front(new HolyWaterProjectile(x1, y1, direction, this));
 }
 
-void StudentWorld::setLaneFound() {
-    m_laneFound = true;
-}
-
-void StudentWorld::resetLane() {
-    m_laneFound = false;
-}
-
-void StudentWorld::setActorNotFound() {
-    m_actorFound = true;
-}
-
-void StudentWorld::resetActor() {
-    m_actorFound = false;
-}
-
 void StudentWorld::addHealingGoodie(int x1, int y1) {
     m_actors.push_front(new HealingGoodie(x1, y1, this));
 }
@@ -296,30 +252,30 @@ void StudentWorld::addSprays() {
     getPlayer()->addCharges(10);
 }
 
-bool StudentWorld::actorFront(int lane, int yPos) {
-    list<Actor*>::const_iterator it = m_actors.begin();
+bool StudentWorld::actorFront(int lane, Actor* current) {
+    list<Actor*>::iterator it = m_actors.begin();
     while (it != m_actors.end()) {
         Actor* a = *it;
         if (lane == 0) {
-            if (a->isAlive() && a->canBeDamaged()) {
-                if (a->getX() >= left_border && a->getX() <= left_white_line) {
-                    if (abs(a->getY()-yPos) < 96)
-                        return true;
+            if (a->isAlive() && a->canBeDamaged() && a != current) {
+                    if (a->getX() >= left_border && a->getX() < left_white_line) {
+                        if (abs(a->getY()-current->getY()) < 96)
+                            return true;
+                    }
                 }
-            }
         }
         if (lane == 1) {
-            if (a->isAlive() && a->canBeDamaged()) {
-                if (a->getX() >= left_white_line && a->getX() <= right_white_line) {
-                    if (abs(a->getY()-yPos) < 96)
+            if (a->isAlive() && a->canBeDamaged() && a!= current) {
+                if (a->getX() >= left_white_line && a->getX() < right_white_line) {
+                    if (abs(a->getY()-current->getY()) < 96)
                         return true;
                 }
             }
         }
         if (lane == 2) {
-            if (a->isAlive() && a->canBeDamaged()) {
-                if (a->getX() >= right_white_line && a->getX() <= right_border) {
-                    if (abs(a->getY()-yPos) < 96)
+            if (a->isAlive() && a->canBeDamaged() && a != current) {
+                if (a->getX() >= right_white_line && a->getX() < right_border) {
+                    if (abs(a->getY()-current->getY()) < 96)
                         return true;
                 }
             }
@@ -328,24 +284,57 @@ bool StudentWorld::actorFront(int lane, int yPos) {
     }
     
     if (lane == 0) {
-        if (getPlayerX() >= left_border && getPlayerX() <= left_white_line) {
-            if (abs(getPlayerY()-yPos) < 96)
+        if (getPlayerX() >= left_border && getPlayerX() < left_white_line) {
+            if (abs(getPlayerY()-current->getY()) < 96)
                 return true;
         }
     }
     if (lane == 1) {
-        if (getPlayerX() >= left_white_line && getPlayerX() <= right_white_line) {
-            if (abs(getPlayerY()-yPos) < 96)
+        if (getPlayerX() >= left_white_line && getPlayerX() < right_white_line) {
+            if (abs(getPlayerY()-current->getY()) < 96)
                 return true;
         }
     }
     if (lane == 2) {
-        if (getPlayerX() >= right_white_line && getPlayerX() <= right_border) {
-            if (abs(getPlayerY()-yPos) < 96)
+        if (getPlayerX() >= right_white_line && getPlayerX() < right_border) {
+            if (abs(getPlayerY()-current->getY()) < 96)
                 return true;
         }
     }
     
+    return false;
+}
+
+bool StudentWorld::actorBehind(int lane, Actor* current) {
+    list<Actor*>::const_iterator it = m_actors.begin();
+    while (it != m_actors.end()) {
+        Actor* a = *it;
+        if (lane == 0) {
+            if (a->isAlive() && a->canBeDamaged() && a != current) {
+                if (a->getX() >= left_border && a->getX() < left_white_line) {
+                    if (current->getY() - a->getY() < 96)
+                        return true;
+                }
+            }
+        }
+        if (lane == 1) {
+            if (a->isAlive() && a->canBeDamaged() && a != current) {
+                if (a->getX() >= left_white_line && a->getX() < right_white_line) {
+                    if (current->getY() - a->getY() < 96)
+                        return true;
+                }
+            }
+        }
+        if (lane == 2) {
+            if (a->isAlive() && a->canBeDamaged() && a != current) {
+                if (a->getX() >= right_white_line && a->getX() < right_border) {
+                    if (current->getY() - a->getY() < 96)
+                        return true;
+                }
+            }
+        }
+        it++;
+    }
     return false;
 }
 
@@ -393,13 +382,13 @@ bool StudentWorld::overlapsWithProjectile(int x1, int y1, double radius) const {
 
 
 bool StudentWorld::evalLeft() {
-    list<Actor*>::const_iterator it = m_actors.begin();
+    list<Actor*>::iterator it = m_actors.begin();
     Actor* maxActor = nullptr;
     int closestPosition = 255;
     while (it != m_actors.end()) {
         Actor* a = *it;
         if (a->canBeDamaged()) {
-            if (a->getX() >= left_border && a->getX() <= left_white_line) {
+            if (a->getX() >= left_border && a->getX() < left_white_line) {
                 if (a->getY() <= closestPosition) {
                     closestPosition = a->getY();
                     maxActor = a;
@@ -409,7 +398,7 @@ bool StudentWorld::evalLeft() {
         it++;
     }
     
-    if (getPlayerX() >= left_border && getPlayerX() <= left_white_line) {
+    if (getPlayerX() >= left_border && getPlayerX() < left_white_line) {
         if (getPlayerY() <= closestPosition) {
             closestPosition = getPlayerY();
             maxActor = getPlayer();
@@ -429,7 +418,7 @@ bool StudentWorld::evalLeft() {
     while (it != m_actors.end()) {
         Actor* a = *it;
         if (a->canBeDamaged()) {
-            if (a->getX() >= left_border && a->getX() <= left_white_line) {
+            if (a->getX() >= left_border && a->getX() < left_white_line) {
                 if (a->getY() >= closestPosition) {
                     closestPosition = a->getY();
                     maxActor = a;
@@ -439,7 +428,7 @@ bool StudentWorld::evalLeft() {
         it++;
     }
     
-    if (getPlayerX() >= left_border && getPlayerX() <= left_white_line) {
+    if (getPlayerX() >= left_border && getPlayerX() < left_white_line) {
         if (getPlayerY() >= closestPosition) {
             closestPosition = getPlayerY();
             maxActor = getPlayer();
@@ -458,13 +447,13 @@ bool StudentWorld::evalLeft() {
 
 
 bool StudentWorld::evalMiddle() {
-    list<Actor*>::const_iterator it = m_actors.begin();
+    list<Actor*>::iterator it = m_actors.begin();
     Actor* maxActor = nullptr;
     int closestPosition = 255;
     while (it != m_actors.end()) {
         Actor* a = *it;
         if (a->canBeDamaged()) {
-            if (a->getX() >= left_white_line && a->getX() <= right_white_line) {
+            if (a->getX() >= left_white_line && a->getX() < right_white_line) {
                 if (a->getY() <= closestPosition) {
                     closestPosition = a->getY();
                     maxActor = a;
@@ -474,7 +463,7 @@ bool StudentWorld::evalMiddle() {
         it++;
     }
     
-    if (getPlayerX() >= left_white_line && getPlayerX() <= right_white_line) {
+    if (getPlayerX() >= left_white_line && getPlayerX() < right_white_line) {
         if (getPlayerY() <= closestPosition) {
             closestPosition = getPlayerY();
             maxActor = getPlayer();
@@ -494,7 +483,7 @@ bool StudentWorld::evalMiddle() {
     while (it != m_actors.end()) {
         Actor* a = *it;
         if (a->canBeDamaged()) {
-            if (a->getX() >= left_white_line && a->getX() <= right_white_line) {
+            if (a->getX() >= left_white_line && a->getX() < right_white_line) {
                 if (a->getY() >= closestPosition) {
                     closestPosition = a->getY();
                     maxActor = a;
@@ -504,14 +493,14 @@ bool StudentWorld::evalMiddle() {
         it++;
     }
     
-    if (getPlayerX() >= left_white_line && getPlayerX() <= right_white_line) {
+    if (getPlayerX() >= left_white_line && getPlayerX() < right_white_line) {
         if (getPlayerY() >= closestPosition) {
             closestPosition = getPlayerY();
             maxActor = getPlayer();
         }
     }
     
-    if (maxActor == nullptr || maxActor->getY() > VIEW_HEIGHT/3) {
+    if (maxActor == nullptr || maxActor->getY() < VIEW_HEIGHT*2/3) {
         double startY = VIEW_HEIGHT-SPRITE_HEIGHT/2;
         double startSpeed = getPlayer()->getvertSpeed() - randInt(2, 4);
         m_actors.push_front(new ZombieCab(ROAD_CENTER, startY, startSpeed, this));
@@ -523,13 +512,13 @@ bool StudentWorld::evalMiddle() {
 
 
 bool StudentWorld::evalRight() {
-    list<Actor*>::const_iterator it = m_actors.begin();
+    list<Actor*>::iterator it = m_actors.begin();
     Actor* maxActor = nullptr;
     int closestPosition = 255;
     while (it != m_actors.end()) {
         Actor* a = *it;
         if (a->canBeDamaged()) {
-            if (a->getX() >= right_white_line && a->getX() <= right_border) {
+            if (a->getX() >= right_white_line && a->getX() < right_border) {
                 if (a->getY() <= closestPosition) {
                     closestPosition = a->getY();
                     maxActor = a;
@@ -539,7 +528,7 @@ bool StudentWorld::evalRight() {
         it++;
     }
     
-    if (getPlayerX() >= right_white_line && getPlayerX() <= right_border) {
+    if (getPlayerX() >= right_white_line && getPlayerX() < right_border) {
         if (getPlayerY() <= closestPosition) {
             closestPosition = getPlayerY();
             maxActor = getPlayer();
@@ -576,7 +565,7 @@ bool StudentWorld::evalRight() {
         }
     }
     
-    if (maxActor == nullptr || maxActor->getY() > VIEW_HEIGHT/3) {
+    if (maxActor == nullptr || maxActor->getY() < VIEW_HEIGHT*2/3) {
         double startY = VIEW_HEIGHT-SPRITE_HEIGHT/2;
         double startSpeed = getPlayer()->getvertSpeed() - randInt(2, 4);
         m_actors.push_front(new ZombieCab(ROAD_CENTER+ROAD_WIDTH/3, startY, startSpeed, this));
