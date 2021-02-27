@@ -37,11 +37,13 @@ int StudentWorld::init()
     double leftEdge = ROAD_CENTER - (ROAD_WIDTH / 2);
     double rightEdge = ROAD_CENTER + (ROAD_WIDTH / 2);
     
+    // Yellow Border Line
     for (int i = 0; i < nObjects; i++) {
         m_actors.push_front(new BorderLine(IID_YELLOW_BORDER_LINE, leftEdge, i*SPRITE_HEIGHT, this));
         m_actors.push_front(new BorderLine(IID_YELLOW_BORDER_LINE, rightEdge, i*SPRITE_HEIGHT, this));
     }
     
+    // White Border Line
     for (int i = 0; i < mObjects; i++) {
         m_actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE, leftEdge + (ROAD_WIDTH/3), i * (4*SPRITE_HEIGHT), this));
         m_actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE, rightEdge - (ROAD_WIDTH/3), i * (4*SPRITE_HEIGHT), this));
@@ -58,16 +60,19 @@ int StudentWorld::move()
     double newBorderY = VIEW_HEIGHT-SPRITE_HEIGHT;
     double deltaY = newBorderY-(actor->getY());
     
+    // Create new yellow border line
     if (deltaY >= SPRITE_HEIGHT) {
         m_actors.push_front(new BorderLine(IID_YELLOW_BORDER_LINE, ROAD_CENTER - (ROAD_WIDTH/2), newBorderY, this));
         m_actors.push_front(new BorderLine(IID_YELLOW_BORDER_LINE, ROAD_CENTER + (ROAD_WIDTH/2), newBorderY, this));
     }
 
+    // Create new white border line
     if (deltaY >= 4*SPRITE_HEIGHT) {
         m_actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE, ROAD_CENTER - ((ROAD_WIDTH/2)-(ROAD_WIDTH/3)), newBorderY, this));
         m_actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE, ROAD_CENTER + ((ROAD_WIDTH/2)-(ROAD_WIDTH/3)), newBorderY, this));
     }
     
+    // Create Oil Slick
     double chanceOilSlick = max(150-getLevel()*10, 40);
     if (randInt(0, chanceOilSlick-1) == 0) {
         int xLocation = randInt(ROAD_CENTER - (ROAD_WIDTH / 2), ROAD_CENTER + (ROAD_WIDTH / 2));
@@ -75,33 +80,39 @@ int StudentWorld::move()
         m_actors.push_front(new OilSlick(xLocation, VIEW_HEIGHT, size, this));
     }
     
+    // Create Holy Water
     double chanceHolyWater = 100 + 10 * getLevel();
     if (randInt(0, chanceHolyWater-1) == 0) {
         int xLocation = randInt(ROAD_CENTER - (ROAD_WIDTH / 2), ROAD_CENTER + (ROAD_WIDTH / 2));
         m_actors.push_front(new HolyWaterGoodie(xLocation, VIEW_HEIGHT, this));
     }
     
+    // Create Soul Goodie
     double chanceOfLostSoul = 100;
     if (randInt(0, chanceOfLostSoul-1) == 0) {
         int xLocation = randInt(ROAD_CENTER - (ROAD_WIDTH / 2), ROAD_CENTER + (ROAD_WIDTH / 2));
         m_actors.push_front(new SoulGoodie(xLocation, VIEW_HEIGHT, this));
     }
     
+    // Create Human Pedestrian
     double chanceHumanPed = max(200 - getLevel() * 10, 30);
     if (randInt(0, chanceHumanPed-1) == 0) {
         int xLocation = randInt(0, VIEW_WIDTH);
         m_actors.push_front(new HumanPedestrian(xLocation, VIEW_HEIGHT, this));
     }
     
+    // Create Zombie Pedestrian
     double chanceZombiePed = max(100 - getLevel() * 10, 30);
     if (randInt(0, chanceZombiePed-1) == 0) {
         int xLocation = randInt(0, VIEW_WIDTH);
         m_actors.push_front(new ZombiePedestrian(xLocation, VIEW_HEIGHT, this));
     }
     
+    // Create Zombie Cab
     double chanceZombieCab = max(100 - getLevel() * 10, 20);
     if (randInt(0, chanceZombieCab-1) == 0) {
         int i = randInt(0, 2);
+        // Check Lanes
         if (i == 0) {
             if (!evalLeft()) {
                 if (!evalMiddle())
@@ -123,6 +134,7 @@ int StudentWorld::move()
         }
     }
     
+    // All Actors do something
     m_player->doSomething();
     list<Actor*>::iterator it;
     for (it = m_actors.begin(); it != m_actors.end(); it++) {
@@ -134,13 +146,14 @@ int StudentWorld::move()
         }
     }
     
+    // Check if level complete
     if (getSoulsToSave() == 0) {
         increaseScore(getBonusPoints());
         playSound(SOUND_FINISHED_LEVEL);
         return GWSTATUS_FINISHED_LEVEL;
     }
     
-    
+    // Delete any dead actors
     it = m_actors.begin();
     while(it != m_actors.end()) {
         if (!(*it)->isAlive()) {
@@ -173,6 +186,7 @@ int StudentWorld::move()
 
 void StudentWorld::cleanUp()
 {
+    // Iterate through all actors and delete
     list<Actor*>::iterator it;
     it = m_actors.begin();
     while(it != m_actors.end()) {
@@ -180,6 +194,7 @@ void StudentWorld::cleanUp()
         it = m_actors.erase(it);
     }
     
+    // Delete player
     if (m_player != nullptr)
         delete m_player;
     m_player = nullptr;
