@@ -585,6 +585,7 @@ bool SoulGoodie::canLevel() const {
     return true;
 }
 
+
 void SoulGoodie::giveGoodie() {
     getWorld()->decreaseSoulsToSave();
     setDead();
