@@ -61,7 +61,7 @@ void Actor::sethorizSpeed(double speed) {
     m_horizSpeed = speed;
 }
 
-void Actor::moveDown() {
+void Actor::moveDown() { // follows movement algorithm
     GhostRacer* player = getWorld()->getPlayer();
     double vertSpeed = getvertSpeed() - player->getvertSpeed();
     double horizSpeed = gethorizSpeed();
@@ -239,7 +239,7 @@ void GhostRacer::doSomething() {
         return;
     }
     
-    if (getX() <= ROAD_CENTER - (ROAD_WIDTH / 2)) {
+    if (getX() <= ROAD_CENTER - (ROAD_WIDTH / 2)) { // if contact with wall
         if (getDirection() > 90) {
             setHealth(getHealth()-10);
             setDirection(82);
@@ -260,23 +260,23 @@ void GhostRacer::doSomething() {
         double currDirection = getDirection();
         double currSpeed = getvertSpeed();
         switch(ch) {
-            case KEY_PRESS_SPACE:
+            case KEY_PRESS_SPACE: // shoot water
                 if (m_waterCharges > 0)
                     shootWater();
                 break;
-            case KEY_PRESS_LEFT:
+            case KEY_PRESS_LEFT: // turn left
                 if (currDirection < 114)
                     setDirection(currDirection+8);
                 break;
-            case KEY_PRESS_RIGHT:
+            case KEY_PRESS_RIGHT: // turn right
                 if (currDirection > 66)
                     setDirection(currDirection-8);
                 break;
-            case KEY_PRESS_UP:
+            case KEY_PRESS_UP: // speed up
                 if (currSpeed < 5)
                     setvertSpeed(currSpeed+1);
                 break;
-            case KEY_PRESS_DOWN:
+            case KEY_PRESS_DOWN: // slow down
                 if (currSpeed > -1)
                     setvertSpeed(currSpeed-1);
                 break;
@@ -341,20 +341,20 @@ ZombieCab::ZombieCab(int startX, int startY, int startSpeed, StudentWorld* sw) :
 
 void ZombieCab::doSomething() {
     GhostRacer* player = getWorld()->getPlayer();
-    if (getHealth() <= 0) {
+    if (getHealth() <= 0) { // zombiecab dead
         setDead();
         getWorld()->playSound(SOUND_VEHICLE_DIE);
-        if (randInt(0, 4) == 0)
+        if (randInt(0, 4) == 0) // chance to add oil slick
             getWorld()->addOilSlick(getX(), getY());
         getWorld()->increaseScore(200);
         return;
     }
     
-    if (!damagedGhostRacer() && getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
+    if (!damagedGhostRacer() && getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) { // contact with ghostracer
         getWorld()->playSound(SOUND_VEHICLE_CRASH);
-        player->setHealth(player->getHealth()-20);
+        player->setHealth(player->getHealth()-20); // decrease health
         
-        if (getX() <= player->getX()) {
+        if (getX() <= player->getX()) { // direct off screen
             sethorizSpeed(-5);
             int randDirection = randInt(0, 19);
             setDirection(120+randDirection);
@@ -366,13 +366,13 @@ void ZombieCab::doSomething() {
             setDirection(60-randDirection);
         }
         
-        racerDamaged();
+        racerDamaged(); // zombie cab cannot damage racer anymore
     }
     
     moveDown();
     
     if (getvertSpeed() > player->getvertSpeed() && getWorld()->actorFront(getLane(), this)) {
-        setvertSpeed(getvertSpeed()-0.5);
+        setvertSpeed(getvertSpeed()-0.5); // adjust speed as moving along
         return;
     }
     
@@ -391,6 +391,7 @@ void ZombieCab::doSomething() {
 }
 
 int ZombieCab::getLane() const {
+    // 0 left lane, 1 middle lane, 2 right lane
     if (getX() >= left_border && getX() < left_white_line)
         return 0;
     else if (getX() >= left_white_line && getX() < right_white_line)
@@ -436,7 +437,7 @@ void HumanPedestrian::doSomething() {
     if (!isAlive())
         return;
     
-    if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
+    if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) { // end level if hits racer
         getWorld()->getPlayer()->setDead();
     }
     
@@ -467,8 +468,8 @@ void ZombiePedestrian::doSomething() {
     if (getHealth() <= 0) {
         setDead();
         getWorld()->playSound(SOUND_PED_DIE);
-        if (!getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
-            if (randInt(0, 4) == 0)
+        if (!getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) { // pedestrian was killed by projectile
+            if (randInt(0, 4) == 0) // chance to add healing goodie
                 getWorld()->addHealingGoodie(getX(), getY());
         }
         getWorld()->increaseScore(150);
@@ -477,12 +478,12 @@ void ZombiePedestrian::doSomething() {
     
         
     if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
-        getWorld()->getPlayer()->setHealth(getWorld()->getPlayer()->getHealth()-5);
+        getWorld()->getPlayer()->setHealth(getWorld()->getPlayer()->getHealth()-5); // zombie dies and racer damaged if overlap
         setHealth(getHealth()-2);
         return;
     }
     
-    if (abs(getX() - getWorld()->getPlayerX()) <= 30 && getY() > getWorld()->getPlayerY()) {
+    if (abs(getX() - getWorld()->getPlayerX()) <= 30 && getY() > getWorld()->getPlayerY()) { // grunt if near
         setDirection(270);
         if (getX() < getWorld()->getPlayerX())
             sethorizSpeed(1);
@@ -532,7 +533,7 @@ OilSlick::OilSlick(int startX, int startY, int size, StudentWorld* sw) :
 
 void OilSlick::doSomething() {
     moveDown();
-    if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) {
+    if (getWorld()->overlapsWithRacer(getX(), getY(), getRadius())) { // spin racer if overlap
         getWorld()->playSound(SOUND_OIL_SLICK);
         getWorld()->getPlayer()->spin();
     }
@@ -584,7 +585,6 @@ bool SoulGoodie::canDestroyOnHit() const {
 bool SoulGoodie::canLevel() const {
     return true;
 }
-
 
 void SoulGoodie::giveGoodie() {
     getWorld()->decreaseSoulsToSave();
