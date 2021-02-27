@@ -203,4 +203,5 @@ private:
     virtual void giveGoodie();
 };
 
+
 #endif // ACTOR_H_
