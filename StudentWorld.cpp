@@ -271,15 +271,15 @@ bool StudentWorld::actorFront(int lane, Actor* current) {
     list<Actor*>::iterator it = m_actors.begin();
     while (it != m_actors.end()) {
         Actor* a = *it;
-        if (lane == 0) {
-            if (a->isAlive() && a->canBeDamaged() && a != current) {
-                    if (a->getX() >= left_border && a->getX() < left_white_line) {
-                        if (abs(a->getY()-current->getY()) < 96)
+        if (lane == 0) { // left lane
+            if (a->isAlive() && a->canBeDamaged() && a != current) { // if alive and collision avoidance worthy
+                    if (a->getX() >= left_border && a->getX() < left_white_line) { // within lane
+                        if (abs(a->getY()-current->getY()) < 96) // distance less than 96
                             return true;
                     }
                 }
         }
-        if (lane == 1) {
+        if (lane == 1) { // middle lane
             if (a->isAlive() && a->canBeDamaged() && a!= current) {
                 if (a->getX() >= left_white_line && a->getX() < right_white_line) {
                     if (abs(a->getY()-current->getY()) < 96)
@@ -287,7 +287,7 @@ bool StudentWorld::actorFront(int lane, Actor* current) {
                 }
             }
         }
-        if (lane == 2) {
+        if (lane == 2) { // right lane
             if (a->isAlive() && a->canBeDamaged() && a != current) {
                 if (a->getX() >= right_white_line && a->getX() < right_border) {
                     if (abs(a->getY()-current->getY()) < 96)
@@ -298,19 +298,19 @@ bool StudentWorld::actorFront(int lane, Actor* current) {
         it++;
     }
     
-    if (lane == 0) {
+    if (lane == 0) { // left lane
         if (getPlayerX() >= left_border && getPlayerX() < left_white_line) {
             if (abs(getPlayerY()-current->getY()) < 96)
                 return true;
         }
     }
-    if (lane == 1) {
+    if (lane == 1) { // middle lane
         if (getPlayerX() >= left_white_line && getPlayerX() < right_white_line) {
             if (abs(getPlayerY()-current->getY()) < 96)
                 return true;
         }
     }
-    if (lane == 2) {
+    if (lane == 2) { // right lane
         if (getPlayerX() >= right_white_line && getPlayerX() < right_border) {
             if (abs(getPlayerY()-current->getY()) < 96)
                 return true;
@@ -358,6 +358,7 @@ bool StudentWorld::overlapsWith(int x1, int y1, double r1, int x2, int y2, doubl
     double deltaY = abs(y1-y2);
     double radiusSum = r1 + r2;
     
+    // overlap algorithm
     if (deltaX < radiusSum * 0.25 && deltaY < radiusSum * 0.6)
         return true;
     return false;
@@ -378,15 +379,15 @@ bool StudentWorld::overlapsWithProjectile(int x1, int y1, double radius) const {
     while (it != m_actors.end()) {
         Actor* a = *it;
         if (a->isAlive() && (a->canBeDamagedByWater() || a->canDestroyOnHit()) && overlapsWith(x1, y1, radius, a->getX(), a->getY(), a->getRadius())) {
-            if (a->canDestroyOnHit()) {
+            if (a->canDestroyOnHit()) { // goodies
                 a->performGoodieEffect();
                 a->setDead();
             }
-            else if (a->redirectOnImpact()) {
+            else if (a->redirectOnImpact()) { // human pedestrian
                 a->reverseDirection();
             }
             else {
-                a->setHealth(a->getHealth()-1);
+                a->setHealth(a->getHealth()-1); // everything else that can be damaged
             }
             return true;
         }
@@ -399,13 +400,13 @@ bool StudentWorld::overlapsWithProjectile(int x1, int y1, double radius) const {
 bool StudentWorld::evalLeft() {
     list<Actor*>::iterator it = m_actors.begin();
     Actor* maxActor = nullptr;
-    int closestPosition = 255;
+    int closestPosition = 255; // trackers of max
     while (it != m_actors.end()) {
         Actor* a = *it;
-        if (a->canBeDamaged()) {
-            if (a->getX() >= left_border && a->getX() < left_white_line) {
+        if (a->canBeDamaged()) { // if collision avoidance worthy
+            if (a->getX() >= left_border && a->getX() < left_white_line) { // if in left lane
                 if (a->getY() <= closestPosition) {
-                    closestPosition = a->getY();
+                    closestPosition = a->getY(); // adjust closest position and max actor
                     maxActor = a;
                 }
             }
@@ -413,7 +414,7 @@ bool StudentWorld::evalLeft() {
         it++;
     }
     
-    if (getPlayerX() >= left_border && getPlayerX() < left_white_line) {
+    if (getPlayerX() >= left_border && getPlayerX() < left_white_line) { // check with player
         if (getPlayerY() <= closestPosition) {
             closestPosition = getPlayerY();
             maxActor = getPlayer();
